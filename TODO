@@ -1,0 +1,13 @@
+TODO
+
+* Player (Art, layout, plumbing)
+* Background Service
+* Better error handling
+* Alphabetical scrolling
+* Instead of fetching the whole locker at once, fetch and cache small chunks when requested 
+* Playlists
+* Search
+
+
+
+

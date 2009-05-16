@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<LinearLayout android:layout_width="fill_parent"
+	android:layout_height="wrap_content" xmlns:android="http://schemas.android.com/apk/res/android"
+	android:background="@drawable/back5"
+	android:orientation="vertical" android:gravity="center">
+<!--	<ImageView android:id="@+id/ImageView01"-->
+<!--		android:layout_width="wrap_content" android:layout_height="wrap_content"-->
+<!--		android:background="@drawable/sign_in_logo" android:layout_margin="48dip"></ImageView>-->
+	<EditText android:id="@+id/username" android:layout_height="wrap_content" android:padding="10dip"
+		android:hint="Email" android:layout_width="200dip" android:singleLine="true" android:background="@drawable/signin_field"/>
+	<EditText android:id="@+id/password" android:layout_height="wrap_content"
+		android:hint="Password" android:layout_width="200dip" android:padding="10dip" 
+		android:password="true" android:maxLines="1" android:singleLine="true" android:background="@drawable/signin_field"/>
+	<Button android:layout_height="wrap_content" android:background="@drawable/sign_in_button"
+		android:id="@+id/sign_in_button" android:text="@string/main_login"
+		android:textColor="#fff" android:textStyle="bold"
+		android:layout_width="200dip" android:layout_marginTop="20dip" />
+<!--	<TextView android:layout_width="wrap_content"-->
+<!--		android:layout_height="wrap_content" android:text="@string/main_newaccount"-->
+<!--		android:layout_marginTop="24dip"></TextView>-->
+<!--	<Button android:layout_height="wrap_content" android:background="@drawable/sign_up_button"-->
+<!--		android:id="@+id/sign_up_button" android:text="@string/main_signup"-->
+<!--		android:textColor="#fff" android:textStyle="bold"-->
+<!--		android:layout_width="200dip" android:layout_marginTop="12dip" />-->
+</LinearLayout>

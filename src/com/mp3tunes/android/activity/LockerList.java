@@ -1,0 +1,495 @@
+/***************************************************************************
+ *   Copyright (C) 2009  Casey Link <unnamedrambler@gmail.com>             *
+ *   Copyright (C) 2007-2008 sibyl project http://code.google.com/p/sibyl/ *
+ *                                                                         *
+ *   This program is free software; you can redistribute it and/or modify  *
+ *   it under the terms of the GNU General Public License as published by  *
+ *   the Free Software Foundation; either version 3 of the License, or     *
+ *   (at your option) any later version.                                   *
+ *                                                                         *
+ *   This program is distributed in the hope that it will be useful,       *
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of        *
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         *
+ *   GNU General Public License for more details.                          *
+ *                                                                         *
+ *   You should have received a copy of the GNU General Public License     *
+ *   along with this program; if not, write to the                         *
+ *   Free Software Foundation, Inc.,                                       *
+ *   51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.         *
+ ***************************************************************************/
+package com.mp3tunes.android.activity;
+
+import java.util.ArrayList;
+import java.util.Stack;
+
+import com.binaryelysium.mp3tunes.api.Locker;
+import com.mp3tunes.android.ListAdapter;
+import com.mp3tunes.android.ListEntry;
+import com.mp3tunes.android.LockerDb;
+import com.mp3tunes.android.MP3tunesApplication;
+import com.mp3tunes.android.Music;
+import com.mp3tunes.android.R;
+import com.mp3tunes.android.util.UserTask;
+
+import android.app.Dialog;
+import android.app.ListActivity;
+import android.app.ProgressDialog;
+import android.content.Intent;
+import android.content.SharedPreferences;
+import android.database.Cursor;
+import android.os.Bundle;
+import android.util.Log;
+import android.view.KeyEvent;
+import android.view.Menu;
+import android.view.MenuItem;
+import android.view.View;
+import android.view.animation.Animation;
+import android.view.animation.AnimationUtils;
+import android.widget.ListView;
+import android.widget.TextView;
+
+/**
+ * Primary activity that encapsulates browsing the locker
+ * 
+ * @author ramblurr
+ * 
+ */
+public class LockerList extends ListActivity
+{
+
+    // the database cursor
+    private Cursor mCursor = null;
+
+    private Locker mLocker;
+
+    // the cached database
+    private LockerDb mDb;
+
+    // id List for main menu
+    private static final int[] mMainOpts = { R.string.artists, R.string.albums, R.string.tracks,
+            R.string.playlists, R.string.search };
+
+    // icon list for the main menu
+    private static final int[] mMainOptsIcon = { R.drawable.artist_icon, R.drawable.album_icon,
+            R.drawable.song_icon, R.drawable.playlist_icon, R.drawable.search_icon };
+
+    // number of main menu options
+    private static final int mMainOptsNum = 5;
+
+    // position of the id column in the dbase cursor (see LockerDb)
+    private static final int ID = 2;
+
+    // C++ style enum of the possible states of the LockerList
+    private static final class STATE
+    {
+
+        public static final int MAIN = 0;
+        public static final int ARTIST = 1;
+        public static final int ALBUM = 2;
+        public static final int TRACK = 3;
+        public static final int PLAYLISTS = 4;
+        public static final int SEARCH = 5;
+    };
+
+    // tracks the current position in the menu
+    private int mPositionMenu = STATE.MAIN;
+
+    // tracks the current row position in main menu
+    private int mPositionRow = 0;
+
+    // sense of the animation when changing menu
+    private static final int TRANSLATION_LEFT = 0;
+    private static final int TRANSLATION_RIGHT = 1;
+    private static final int MENU_LOGOUT = 0;
+    private static final int DIALOG_REFRESH = 0;
+
+    private static final String TAG = "LockerList";
+
+    private Animation mLTRanim;
+    private Animation mRTLanim;
+
+    // Stores browsing history within the activity
+    private Stack<HistoryUnit> mHistory;
+
+    /**
+     * Encapsulates the required fields to store a browsing state.
+     */
+    private class HistoryUnit
+    {
+
+        public int state; // See LockerList.STATE
+        public ListAdapter adapter;
+        public HistoryUnit( int s, ListAdapter a )
+        {
+            state = s;
+            adapter = a;
+        }
+    }
+
+    @Override
+    public void onCreate( Bundle icicle )
+    {
+        super.onCreate( icicle );
+        setContentView( R.layout.lockerlist );
+
+        mLocker = ( Locker ) MP3tunesApplication.getInstance().map.get( "mp3tunes_locker" );
+        if ( mLocker == null )
+            logout();
+
+        mLTRanim = AnimationUtils.loadAnimation( this, R.anim.ltrtranslation );
+        mRTLanim = AnimationUtils.loadAnimation( this, R.anim.rtltranslation );
+
+        // this prevents the background image from flickering when the
+        // animations run
+        getListView().setAnimationCacheEnabled( false );
+
+        try
+        // establish a connection with the database
+        {
+            mDb = new LockerDb( this, mLocker );
+
+        }
+        catch ( Exception ex )
+        {
+            // database connection failed.
+            // Show an error and exit gracefully.
+            System.out.println( ex.getMessage() );
+            ex.printStackTrace();
+            MP3tunesApplication.getInstance().presentError( getApplicationContext(), "a", "" );
+            logout();
+        }
+
+        // Refresh the locker asyncronously
+        // TODO this takes an extremely long time on large lockers
+        new RefreshCacheTask().execute();
+
+        mHistory = new Stack<HistoryUnit>();
+
+        displayMainMenu( TRANSLATION_LEFT );
+    }
+
+    @Override
+    protected void onDestroy()
+    {
+        if ( mCursor != null )
+            mCursor.close();
+        mDb.close();
+
+        super.onDestroy();
+    }
+
+    /** Creates the menu items */
+    public boolean onCreateOptionsMenu( Menu menu )
+    {
+        menu.add( 0, MENU_LOGOUT, 0, "Logout" ).setIcon( R.drawable.logout_light );
+        return true;
+    }
+
+    /** Handles menu clicks */
+    public boolean onOptionsItemSelected( MenuItem item )
+    {
+        switch ( item.getItemId() )
+        {
+        case MENU_LOGOUT:
+            logout();
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * We want to intercept the Back keypress so we can handle our own backwards
+     * navigation.
+     */
+    public boolean onKeyDown( int keyCode, KeyEvent event )
+    {
+        if ( keyCode == KeyEvent.KEYCODE_BACK )
+        {
+            if ( !mHistory.isEmpty() )
+            {
+                HistoryUnit u = mHistory.pop();
+                mPositionMenu = u.state;
+                getListView().startAnimation( mLTRanim );
+                setListAdapter( u.adapter );
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /** displays the main menu */
+    private void displayMainMenu( int sense )
+    {
+        ArrayList<ListEntry> iconifiedEntries = new ArrayList<ListEntry>();
+
+        for ( int i = 0; i < mMainOptsNum; i++ )
+        { // add all strings to the adapter
+            ListEntry entry = new ListEntry( getString( mMainOpts[i] ), mMainOptsIcon[i],
+                    getString( mMainOpts[i] ), R.drawable.list_arrow );
+            iconifiedEntries.add( entry );
+        }
+        ListAdapter adapter = new ListAdapter( LockerList.this );
+        adapter.setSourceIconified( iconifiedEntries );
+        setListAdapter( adapter );
+
+        getListView().setSelection( mPositionRow );
+        if ( sense == TRANSLATION_LEFT )
+        {
+            getListView().startAnimation( mRTLanim );
+        }
+        else if ( sense == TRANSLATION_RIGHT )
+        {
+            getListView().startAnimation( mLTRanim );
+        }
+    }
+
+    protected void onListItemClick( ListView l, View vu, int position, long id )
+    {
+        // Store the current state in the history stack
+        HistoryUnit u = new HistoryUnit( mPositionMenu, ( ListAdapter ) getListAdapter() );
+        mHistory.push( u );
+
+        // Show the requested option
+        refreshMenu( position );
+    }
+
+    /**
+     * Updates the screen with fresh menu options according to the current STATE
+     * and which item was clicked.
+     */
+    private void refreshMenu( int pos )
+    {
+        if ( mPositionMenu == STATE.MAIN )
+        {
+            mPositionRow = pos;
+            showSubMenu( TRANSLATION_LEFT );
+        }
+        else
+        {
+            if ( mCursor != null && mPositionMenu != STATE.PLAYLISTS
+                    && mPositionMenu != STATE.SEARCH )
+                mCursor.moveToPosition( pos );
+
+            if ( mPositionMenu == STATE.ARTIST )
+            { // Going to album list
+                ListAdapter a = ( ListAdapter ) getListAdapter();
+                int artist_id = ( Integer ) a.getItem( pos );
+                mPositionMenu = STATE.ALBUM;
+                mCursor = mDb.getAlbumsForArtist( artist_id );
+                System.out.println( "Got rows: " + mCursor.getCount() );
+
+                getListView().startAnimation( mRTLanim );
+                setListAdapter( adapterFromCursor( 0, R.drawable.album_icon, 1,
+                        R.drawable.list_arrow ) );
+
+            }
+            else if ( mPositionMenu == STATE.ALBUM )
+            { // Going to track list
+                ListAdapter a = ( ListAdapter ) getListAdapter();
+                int album_id = ( Integer ) a.getItem( pos );
+                mPositionMenu = STATE.TRACK;
+                mCursor = mDb.getTracksForAlbum( album_id );
+                System.out.println( "Got rows: " + mCursor.getCount() );
+
+                getListView().startAnimation( mRTLanim );
+                setListAdapter( adapterFromCursor( 0, R.drawable.song_icon, 1,
+                        R.drawable.right_play1 ) );
+            }
+            else if ( mPositionMenu == STATE.TRACK )
+            {
+                System.out.println( "TRACK CLICKED!" );
+            }
+            else if ( mPositionMenu == STATE.PLAYLISTS )
+            {
+
+            }
+            else if ( mPositionMenu == STATE.SEARCH )
+            {
+
+            }
+        }
+
+    }
+
+    private void showSubMenu( int sense )
+    {
+        if ( sense == TRANSLATION_LEFT )
+        {
+            getListView().startAnimation( mRTLanim );
+        }
+        else if ( sense == TRANSLATION_RIGHT )
+        {
+            getListView().startAnimation( mLTRanim );
+        }
+
+        // which manu menu option has been selected
+        int icon_id = -1;
+        switch ( mMainOpts[mPositionRow] )
+        {
+        case R.string.artists:
+            mCursor = mDb.getTableList( Music.Meta.ARTIST );
+            mPositionMenu = STATE.ARTIST;
+            icon_id = R.drawable.artist_icon;
+            break;
+
+        case R.string.albums:
+            mCursor = mDb.getTableList( Music.Meta.ALBUM );
+            System.out.println( "Got albums: " + mCursor.getCount() );
+            mPositionMenu = STATE.ALBUM;
+            icon_id = R.drawable.album_icon;
+            break;
+
+        case R.string.tracks:
+            mCursor = mDb.getTableList( Music.Meta.TRACK );
+            mPositionMenu = STATE.TRACK;
+            icon_id = R.drawable.song_icon;
+            break;
+
+        case R.string.search:
+            mPositionMenu = STATE.SEARCH;
+            break;
+
+        case R.string.playlists:
+            mPositionMenu = STATE.PLAYLISTS;
+            break;
+        }
+
+        // if the cursor is empty, we adjust the text in function of the submenu
+        if ( mCursor == null )
+        {
+            System.out.println( "ERROR CURSOR NULL" );
+            return;
+        }
+        startManagingCursor( mCursor );
+        if ( mCursor.getCount() == 0 )
+        {
+            System.out.println( "CURSOR EMPTY" );
+            TextView emptyText = ( TextView ) findViewById( android.R.id.empty );
+            switch ( mPositionMenu )
+            {
+            case STATE.ARTIST:
+                emptyText.setText( R.string.empty_artist );
+                break;
+            case STATE.ALBUM:
+                emptyText.setText( R.string.empty_album );
+                break;
+            case STATE.TRACK:
+                emptyText.setText( R.string.empty_track );
+                break;
+            }
+        }
+
+        setListAdapter( adapterFromCursor( 1, icon_id, 0, R.drawable.list_arrow ) );
+    }
+
+    /**
+     * Helper function that creates a custom ListAdapter from the current
+     * mCursor
+     * 
+     * @param id_field
+     *            the column id that contains the id (track_id, artist_id, etc)
+     * @param icon_id
+     *            the resource id that contains the id of the icon
+     * @param text_id
+     *            the column id that contains the text to be displayed in the
+     *            ListEntry
+     * @param disclosure_id
+     *            the resource id that contains the id of the disclosure icon
+     * @return
+     */
+    private ListAdapter adapterFromCursor( int id_field, int icon_id, int text_id, int disclosure_id )
+    {
+        ArrayList<ListEntry> iconifiedEntries = new ArrayList<ListEntry>();
+        while ( mCursor.moveToNext() )
+        {
+            ListEntry entry = new ListEntry( mCursor.getInt( id_field ), icon_id == -1 ? null
+                    : icon_id, mCursor.getString( text_id ), disclosure_id );
+            iconifiedEntries.add( entry );
+
+        }
+        ListAdapter adapter = new ListAdapter( LockerList.this );
+        adapter.setSourceIconified( iconifiedEntries );
+        return adapter;
+    }
+
+    /**
+     * Clears all session data (and the cache), and sends the user back to the
+     * login screen.
+     */
+    private void logout()
+    {
+        clearData();
+        Intent intent = new Intent( LockerList.this, Login.class );
+        startActivity( intent );
+        finish();
+    }
+
+    private void clearData()
+    {
+        SharedPreferences settings = getSharedPreferences( Login.PREFS, 0 );
+        SharedPreferences.Editor editor = settings.edit();
+        editor.remove( "mp3tunes_user" );
+        editor.remove( "mp3tunes_pass" );
+        editor.commit();
+        MP3tunesApplication.getInstance().clearUpdate();
+        mDb.clearDB();
+        mDb.close();
+    }
+
+    protected Dialog onCreateDialog( int id )
+    {
+        switch ( id )
+        {
+        case DIALOG_REFRESH: {
+            ProgressDialog dialog = new ProgressDialog( this );
+            dialog.setMessage( getString( R.string.loading_msg ) );
+            dialog.setIndeterminate( true );
+            dialog.setCancelable( false );
+            return dialog;
+        }
+
+        }
+        return null;
+
+    }
+
+    private class RefreshCacheTask extends UserTask<Void, Void, Boolean>
+    {
+        @Override
+        public void onPreExecute()
+        {
+            showDialog( DIALOG_REFRESH );
+        }
+
+        @Override
+        public Boolean doInBackground( Void... params )
+        {
+            try
+            {
+                mDb.refreshCache();
+            }
+            catch ( Exception e )
+            {
+                return false;
+            }
+            return true;
+        }
+
+        @Override
+        public void onPostExecute( Boolean result )
+        {
+            if ( result )
+            {
+                dismissDialog( DIALOG_REFRESH );
+            }
+            else
+            {
+                MP3tunesApplication.getInstance().presentError( getApplicationContext(),
+                        getString( R.string.ERROR_SERVER_UNAVAILABLE_TITLE ),
+                        getString( R.string.ERROR_SERVER_UNAVAILABLE ) );
+                logout();
+            }
+        }
+    }
+
+}

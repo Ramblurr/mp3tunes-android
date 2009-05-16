@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<resources>
+
+	<style name="PlaybackText">
+                <item name="android:textColor">#ffffffff</item>
+                <item name="android:shadowColor">#ff404040</item>
+                <item name="android:shadowRadius">2.0</item>
+        </style>
+        
+</resources>

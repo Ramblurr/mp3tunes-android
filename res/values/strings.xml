@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">MP3tunes</string>
+   	<string name="main_cancel">Cancel</string>
+	<string name="main_login">Log in</string>
+	<string name="main_setup">Setup</string>
+	<string name="main_signup">Sign up</string>
+	<string name="main_newaccount">Haven't got an account yet?</string>
+	
+	<string name="artists">Artists</string>
+	<string name="albums">Albums</string>
+	<string name="tracks">Tracks</string>
+	<string name="playlists">Playlists</string>
+	<string name="search">Search</string>
+	
+	<string name="empty_artist">No Artists in your Locker</string>
+	<string name="empty_album">No Albums in your Locker</string>
+	<string name="empty_track">No Tracks in your Locker</string>
+	
+	<string name="loading_msg">Loading Locker..</string>
+	
+	
+	<string name="ERROR_AUTH_TITLE">Incorrect Login</string>
+	<string name="ERROR_AUTH">Unable to login to MP3tunes.  Please check your email and password and try again.</string>
+	<string name="ERROR_MISSINGINFO">You must have a valid MP3tunes email and password.  If you don't have an account, visit www.mp3tunes.com to get your free Music Locker.</string>
+	<string name="ERROR_MISSINGINFO_TITLE">Missing Information</string>
+	<string name="ERROR_SERVER_UNAVAILABLE">There was a problem communicating with the MpP3tunes servers.  Please try again shortly.</string>
+	<string name="ERROR_SERVER_UNAVAILABLE_TITLE">Communication Error</string>
+	<string name="ERROR_GENERIC">A problem was encountered and the application must restart.</string>
+	<string name="ERROR_GENERIC_TITLE">Error Encountered</string>
+</resources>
