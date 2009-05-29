@@ -1,11 +1,23 @@
 package com.mp3tunes.android.service;
-interface ITunesPlayer {  
+interface ITunesService {  
 
-	void pause(); /* Pause playback */
-	void stop(); /* Stop playback */
-	void prev(); /* Play the prev song in the playlist */
-	void next(); /* Play the next song in the playlist */
-	void startPlaying();
+	/* Pause playback */
+	void pause(); 
+	
+	/* Stop playback */
+	void stop();
+	
+	/* Play the prev song in the playlist */
+	void prev(); 
+	
+	/* Play the next song in the playlist */
+	void next(); 
+	
+	/* Play the current selected item in the playlist */
+	void start();
+
+	/* Play the track at a particular position in the playlist */
+	void startAt(int pos);
 	
 	
 	/* SHUFFLE or NORMAL */
@@ -17,7 +29,7 @@ interface ITunesPlayer {
 	/* NONE, SONG, or PLAYLIST */
 	void setRepeatMode(int mode);
 	
-	/* Get the repear state */
+	/* Get the repeat state */
 	int getRepeatMode();
 	
 	/* Returns the current track's artist name*/
@@ -28,7 +40,10 @@ interface ITunesPlayer {
 	
 	/* Returns the current track name */
 	String getTrackName();
+	
 	String getArtUrl();
+	Bitmap getAlbumArt();
+	void setAlbumArt(in Bitmap art);
 	
 	/* Returns the duration of the current track */
 	long   getDuration();
@@ -38,11 +53,12 @@ interface ITunesPlayer {
 	
 	/* Set the position of the currently played track. Returns true 
 	   if the operation was successful. */
-	boolean setPosition(in long msec);
+	boolean setPosition(in int msec);
 	
 	/* Returns the percentage the track has buffered */
 	int	   getBufferPercent();
 	
+	/* Returns true if a track is currently playing */
 	boolean isPlaying();
 	
 } 
