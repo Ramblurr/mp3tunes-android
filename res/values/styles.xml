@@ -7,5 +7,32 @@
                 <item name="android:shadowColor">#ff404040</item>
                 <item name="android:shadowRadius">2.0</item>
         </style>
+        	<style name="playback_info">
+		<item name="android:textSize">5pt</item>
+		<item name="android:textColor">#fff</item>
+		<item name="android:textStyle">bold</item>
+	</style>
+	<style name="playback_time">
+		<item name="android:textSize">5pt</item>
+		<item name="android:textColor">#fff</item>
+		<item name="android:textStyle">bold</item>
+	</style>
+	<style name="TunesButton">
+<!--		<item name="android:background">@+drawable/player_controls</item>-->
+		<item name="android:layout_width">80dip</item>
+		<item name="android:layout_height">76dip</item>
+	</style>
+	<style name="TunesButton.Love">
+		<item name="android:src">@+drawable/right_play</item>
+	</style>
+	<style name="TunesButton.Ban">
+		<item name="android:src">@+drawable/right_play</item>
+	</style>
+	<style name="TunesButton.Stop">
+		<item name="android:src">@+drawable/right_play</item>
+	</style>
+	<style name="TunesButton.Skip">
+		<item name="android:src">@+drawable/right_play</item>
+	</style>
         
 </resources>

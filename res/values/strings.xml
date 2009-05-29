@@ -13,6 +13,11 @@
 	<string name="playlists">Playlists</string>
 	<string name="search">Search</string>
 	
+	<string name="shuffle_tracks">Shuffle Tracks</string>
+	<string name="shuffle_artists">Shuffle Artists</string>
+	<string name="shuffle_albums">Shuffle Albums</string>
+	<string name="shuffle_none">Normal</string>
+	
 	<string name="empty_artist">No Artists in your Locker</string>
 	<string name="empty_album">No Albums in your Locker</string>
 	<string name="empty_track">No Tracks in your Locker</string>
@@ -28,4 +33,6 @@
 	<string name="ERROR_SERVER_UNAVAILABLE_TITLE">Communication Error</string>
 	<string name="ERROR_GENERIC">A problem was encountered and the application must restart.</string>
 	<string name="ERROR_GENERIC_TITLE">Error Encountered</string>
+	<string name="ERROR_PLAYBACK_FAILED_TITLE"></string>
+	<string name="ERROR_PLAYBACK_FAILED"></string>
 </resources>
