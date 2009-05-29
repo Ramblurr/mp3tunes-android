@@ -4,17 +4,21 @@
       android:versionCode="1"
       android:versionName="1.0.0">
      <uses-permission android:name="android.permission.INTERNET"></uses-permission>
+	<uses-permission android:name="android.permission.WAKE_LOCK"></uses-permission>
     <application android:icon="@drawable/icon" android:label="@string/app_name" 
     	android:name="MP3tunesApplication">
         <activity android:name=".activity.Login"
                   android:label="MP3tunes">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
+                <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
     	<activity android:name=".activity.LockerList" android:label="MP3tunes Music Locker" android:configChanges="keyboardHidden">
 			<intent-filter>
+				<action android:name="android.intent.action.VIEW"/>
+				<category android:name="android.intent.category.DEFAULT"/>
 			</intent-filter>
 		</activity>
     </application>
