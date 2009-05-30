@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.Stack;
 
 import com.binaryelysium.mp3tunes.api.Locker;
+import com.mp3tunes.android.AlphabetIndexer;
 import com.mp3tunes.android.ListAdapter;
 import com.mp3tunes.android.ListEntry;
 import com.mp3tunes.android.LockerDb;
@@ -117,6 +118,8 @@ public class LockerList extends ListActivity
     // Stores browsing history within the activity
     private Stack<HistoryUnit> mHistory;
     private IntentFilter mIntentFilter;
+    
+    private String[] mAlphabet;
 
     /**
      * Encapsulates the required fields to store a browsing state.
@@ -175,6 +178,8 @@ public class LockerList extends ListActivity
         mIntentFilter = new IntentFilter();
         mIntentFilter.addAction( Mp3tunesService.PLAYBACK_ERROR );
         mIntentFilter.addAction( Mp3tunesService.META_CHANGED );
+        
+        getAlphabet(LockerList.this);
         
         displayMainMenu( TRANSLATION_LEFT );
     }
@@ -482,8 +487,18 @@ public class LockerList extends ListActivity
 
         }
         ListAdapter adapter = new ListAdapter( LockerList.this );
+        AlphabetIndexer indexer = new AlphabetIndexer(mCursor, text_id, mAlphabet);
+        adapter.setIndexer( indexer );
         adapter.setSourceIconified( iconifiedEntries );
         return adapter;
+    }
+    
+    private void getAlphabet(Context context) {
+        String alphabetString = context.getResources().getString(R.string.alphabet);
+        mAlphabet = new String[alphabetString.length()];
+        for (int i = 0; i < mAlphabet.length; i++) {
+            mAlphabet[i] = String.valueOf(alphabetString.charAt(i));
+        }
     }
 
     /**

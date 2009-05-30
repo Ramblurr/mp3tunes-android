@@ -26,6 +26,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 
 import android.app.Activity;
+import android.content.Context;
 import android.graphics.Bitmap;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -54,7 +55,7 @@ import java.io.Serializable;
  * @author Lukasz Wisniewski
  * @author Casey Link
  */
-public class ListAdapter extends BaseAdapter implements Serializable, ImageDownloaderListener {
+public class ListAdapter extends BaseAdapter implements Serializable, ImageDownloaderListener, FastScrollView.SectionIndexer {
 
         private static final long serialVersionUID = -4219322831181525818L;
         protected transient ImageCache mImageCache;
@@ -65,6 +66,9 @@ public class ListAdapter extends BaseAdapter implements Serializable, ImageDownl
         private int mLoadingBar = -1;
         private boolean mScaled = true;
         private boolean mEnabled = true;
+        private String [] mAlphabet;
+        private AlphabetIndexer mIndexer;
+
 
         private void writeObject(java.io.ObjectOutputStream out) throws IOException
         {
@@ -83,6 +87,8 @@ public class ListAdapter extends BaseAdapter implements Serializable, ImageDownl
 
         public ListAdapter(Activity context) {
                 mContext = context;
+                mIndexer = null;
+                getAlphabet( context.getApplicationContext() );
         }
 
         /**
@@ -122,6 +128,14 @@ public class ListAdapter extends BaseAdapter implements Serializable, ImageDownl
                 setImageCache(imageCache);
                 mList = new ArrayList<ListEntry>();
         }
+        
+         private void getAlphabet(Context context) {
+             String alphabetString = context.getResources().getString(R.string.alphabet);
+             mAlphabet = new String[alphabetString.length()];
+             for (int i = 0; i < mAlphabet.length; i++) {
+                 mAlphabet[i] = String.valueOf(alphabetString.charAt(i));
+             }
+         }
 
         public View getView(int position, View convertView, ViewGroup parent)
         {
@@ -241,6 +255,11 @@ public class ListAdapter extends BaseAdapter implements Serializable, ImageDownl
                         e.printStackTrace();
                 }
         }
+        
+        public void setIndexer(AlphabetIndexer indexer)
+        {
+            mIndexer = indexer;
+        }
 
         public void setIconsUnscaled()
         {
@@ -335,6 +354,24 @@ public class ListAdapter extends BaseAdapter implements Serializable, ImageDownl
         public void disableDisclosureIcons() {
                 for( ListEntry l : mList )
                         l.disclosure_id = -1;
+        }
+
+        public int getPositionForSection( int sectionIndex )
+        {
+            if (mIndexer == null)
+                return 0;
+
+            return mIndexer.indexOf(sectionIndex);
+        }
+
+        public int getSectionForPosition( int position )
+        {
+            return 0;
+        }
+
+        public Object[] getSections()
+        {
+            return mAlphabet;
         }
 
 }
