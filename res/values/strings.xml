@@ -6,6 +6,9 @@
 	<string name="main_setup">Setup</string>
 	<string name="main_signup">Sign up</string>
 	<string name="main_newaccount">Haven't got an account yet?</string>
+    
+    <string name="menu_logout">Logout</string>
+    <string name="menu_settings">Settings</string>
 	
 	<string name="artists">Artists</string>
 	<string name="albums">Albums</string>
