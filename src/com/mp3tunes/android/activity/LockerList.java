@@ -203,7 +203,7 @@ public class LockerList extends ListActivity
     
     @Override
     public void onResume() {
-        registerReceiver( mStatusListener, mIntentFilter );
+//        registerReceiver( mStatusListener, mIntentFilter );
         //We need to bind the player so we can see whether it's playing or not
         //in order to properly display the Now Playing indicator if we've been
         //relaunched after being killed.
@@ -323,10 +323,10 @@ public class LockerList extends ListActivity
      */
     private void refreshMenu( int pos )
     {
+        (( ListAdapter ) getListAdapter()).enableLoadBar( pos );
         if ( mPositionMenu == STATE.MAIN )
         {
             mPositionRow = pos;
-            (( ListAdapter ) getListAdapter()).enableLoadBar( pos );
             showSubMenu( TRANSLATION_LEFT );
         }
         else
@@ -337,28 +337,16 @@ public class LockerList extends ListActivity
 
             if ( mPositionMenu == STATE.ARTIST )
             { // Going to album list
+                
                 ListAdapter a = ( ListAdapter ) getListAdapter();
                 int artist_id = ( Integer ) a.getItem( pos );
-                mPositionMenu = STATE.ALBUM;
-                mCursor = mDb.getAlbumsForArtist( artist_id );
-                System.out.println( "Got rows: " + mCursor.getCount() );
-
-                getListView().startAnimation( mRTLanim );
-                setListAdapter( adapterFromCursor( 0, R.drawable.album_icon, 1,
-                        R.drawable.list_arrow ) );
-
+                new FetchAlbumsTask().execute( TRANSLATION_LEFT, artist_id );
             }
             else if ( mPositionMenu == STATE.ALBUM )
             { // Going to track list
                 ListAdapter a = ( ListAdapter ) getListAdapter();
                 int album_id = ( Integer ) a.getItem( pos );
-                mPositionMenu = STATE.TRACK;
-                mCursor = mDb.getTracksForAlbum( album_id );
-                System.out.println( "Got rows: " + mCursor.getCount() );
-
-                getListView().startAnimation( mRTLanim );
-                setListAdapter( adapterFromCursor( 0, R.drawable.song_icon, 1,
-                        R.drawable.right_play ) );
+                new FetchTracksTask().execute( TRANSLATION_LEFT, album_id );
             }
             else if ( mPositionMenu == STATE.TRACK )
             {
@@ -435,11 +423,9 @@ public class LockerList extends ListActivity
             mPositionMenu = STATE.PLAYLISTS;
             break;
         }
-
-        handleListSwitch(icon_id);
     }
     
-    private void handleListSwitch(int icon_id)
+    private void handleListSwitch(int id_field, int icon_id, int text_id, int disclosure_id)
     {
         ((ListAdapter) getListAdapter()).disableLoadBar();
         // if the cursor is empty, we adjust the text in function of the submenu
@@ -467,7 +453,7 @@ public class LockerList extends ListActivity
             }
         }
 
-        setListAdapter( adapterFromCursor( 1, icon_id, 0, R.drawable.list_arrow ) );
+        setListAdapter( adapterFromCursor( id_field, icon_id, text_id, disclosure_id ) );
     }
 
     /**
@@ -617,10 +603,18 @@ public class LockerList extends ListActivity
                 getListView().startAnimation( mLTRanim );
             }
             mPositionMenu = STATE.ARTIST;
-            handleListSwitch(R.drawable.artist_icon);
+            handleListSwitch(0, R.drawable.artist_icon, 1, R.drawable.arrow);
         }
     }
     
+    /**
+     * Fetches albums async
+     * Takes a Int[]
+     *  0: sense  animate TRANSLATION_RIGHT or TRANSLATION_LEFT
+     *  1: artist_id or -1
+     * @author ramblurr
+     *
+     */
     private class FetchAlbumsTask extends UserTask<Integer, Void, Boolean>
     {
         int sense = -1;
@@ -634,9 +628,15 @@ public class LockerList extends ListActivity
         public Boolean doInBackground( Integer... params )
         {
             sense = params[0];
+            int artist_id = -1;
+            if(params.length > 1)
+                artist_id = params[1];
             try
             {
-                mCursor = mDb.getTableList( Music.Meta.ALBUM );
+                if(artist_id > -1)
+                    mCursor = mDb.getAlbumsForArtist( artist_id );
+                else
+                    mCursor = mDb.getTableList( Music.Meta.ALBUM );
             }
             catch ( Exception e )
             {
@@ -658,7 +658,7 @@ public class LockerList extends ListActivity
                 getListView().startAnimation( mLTRanim );
             }
             mPositionMenu = STATE.ALBUM;
-            handleListSwitch(R.drawable.album_icon);
+            handleListSwitch(0, R.drawable.album_icon, 1, R.drawable.arrow);
         }
     }
     
@@ -675,9 +675,15 @@ public class LockerList extends ListActivity
         public Boolean doInBackground( Integer... params )
         {
             sense = params[0];
+            int album_id = -1;
+            if(params.length > 1)
+                album_id = params[1];
             try
             {
-                mCursor = mDb.getTableList( Music.Meta.TRACK );
+                if(album_id > -1)
+                    mCursor = mDb.getTracksForAlbum( album_id );
+                else
+                    mCursor = mDb.getTableList( Music.Meta.TRACK );
             }
             catch ( Exception e )
             {
@@ -699,7 +705,7 @@ public class LockerList extends ListActivity
                 getListView().startAnimation( mLTRanim );
             }
             mPositionMenu = STATE.TRACK;
-            handleListSwitch(R.drawable.song_icon);
+            handleListSwitch(0, R.drawable.song_icon, 1, R.drawable.right_play);
         }
     }
 

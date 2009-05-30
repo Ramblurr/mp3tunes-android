@@ -303,20 +303,31 @@ public class LockerDb
     
     private Cursor queryArtists()
     {
-        return mDb.query( "artist", new String[] { "artist_name", "_id" }, null, null,
+        return mDb.query( "artist", new String[] { "_id", "artist_name" }, null, null,
                 null, null, "artist_name" );   
     }
     
     private Cursor queryAlbums()
     {
-        return mDb.query( "album", new String[] { "album_name", "_id", "track_count" },
+        return mDb.query( "album", new String[] { "_id", "album_name", "track_count" },
                 null, null, null, null, "album_name" );
+    }
+    
+    private Cursor queryAlbums( int artist_id )
+    {
+        return  mDb.query( "album", Music.ALBUM, "artist_id=" + artist_id,
+                null, null, null, "album_name" );  
     }
     
     private Cursor queryTracks()
     {
-        return mDb.query( "track", new String[] { "title", "_id", "track" }, null, null,
+        return mDb.query( "track", new String[] { "_id", "title", "track" }, null, null,
                 null, null, "title" );
+    }
+
+    private Cursor queryTracks( int album_id )
+    {
+        return mDb.query( "track", Music.TRACK, "album_id=" + album_id, null, null, null, "track" );
     }
 
     /**
@@ -343,10 +354,35 @@ public class LockerDb
     {
         System.out.println( "querying for albums by: " + artist_id );
         Cursor c = mDb.rawQuery( "SELECT artist_name FROM artist WHERE _id=" + artist_id, null );
-        if ( c.moveToNext() )
-            System.out.println( "Found: " + c.getString( 0 ) );
-        return mDb.query( "album", new String[] { "_id", "album_name" }, "artist_id=" + artist_id,
-                null, null, null, "album_name" );
+        if ( !c.moveToNext() ) {
+            //TODO fetch the artist?
+            Log.e( "Mp3tunes", "Error artist doesnt exist" );
+            return null;
+        }
+        c.close();
+        
+        c = queryAlbums( artist_id ); 
+        
+        if( c.getCount() > 0 )
+            return c;
+        else
+            c.close();
+        try
+        {
+            refreshAlbumsForArtist( artist_id );
+            return queryAlbums( artist_id );  
+        }
+        catch ( SQLiteException e )
+        {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+        catch ( IOException e )
+        {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+        return null;
     }
 
     /**
@@ -369,7 +405,38 @@ public class LockerDb
      */
     public Cursor getTracksForAlbum( int album_id )
     {
-        return mDb.query( "track", Music.TRACK, "album_id=" + album_id, null, null, null, "track" );
+        System.out.println( "querying for tracks on album: " + album_id );
+        Cursor c = mDb.rawQuery( "SELECT album_name FROM album WHERE _id=" + album_id, null );
+        if ( !c.moveToNext() ) {
+            //TODO fetch the album?
+            Log.e( "Mp3tunes", "Error album doesnt exist" );
+            return null;
+        }
+        c.close();
+        
+        c = queryTracks( album_id );
+
+        if( c.getCount() > 0 )
+            return c;
+        else
+            c.close();
+
+        try
+        {
+            refreshTracksforAlbum( album_id );
+            return queryTracks( album_id );  
+        }
+        catch ( SQLiteException e )
+        {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+        catch ( IOException e )
+        {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+        return null;
     }
 
     /**
@@ -537,6 +604,30 @@ public class LockerDb
         }
         System.out.println( "insertion complete" );
         mCache.setUpdate( System.currentTimeMillis(), LockerCache.ALBUM );
+    }
+    
+    private void refreshAlbumsForArtist(int artist_id)  throws SQLiteException, IOException
+    {
+        ArrayList<Album> albums = new ArrayList<Album>( mLocker.getAlbumsForArtist( artist_id ) );
+        int lim = albums.size();
+        System.out.println( "beginning insertion of " + lim + " albums for artist id " +artist_id );
+        for ( int i = 0; i < lim; i++ )
+        {
+            insertAlbum( albums.get( i ) );
+        }
+        System.out.println( "insertion complete" );
+    }
+    
+    private void refreshTracksforAlbum(int album_id)  throws SQLiteException, IOException
+    {
+        ArrayList<Track> tracks = new ArrayList<Track>( mLocker.getTracksForAlbum( album_id ));
+        int lim = tracks.size();
+        System.out.println( "beginning insertion of " + lim + " tracks for album id " +album_id );
+        for ( int i = 0; i < lim; i++ )
+        {
+            insertTrack( tracks.get( i ) );
+        }
+        System.out.println( "insertion complete" );
     }
 
     /**
