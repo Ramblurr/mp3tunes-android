@@ -29,18 +29,24 @@ import com.mp3tunes.android.LockerDb;
 import com.mp3tunes.android.MP3tunesApplication;
 import com.mp3tunes.android.Music;
 import com.mp3tunes.android.R;
+import com.mp3tunes.android.service.Mp3tunesService;
 import com.mp3tunes.android.util.UserTask;
 
 import android.app.Dialog;
 import android.app.ListActivity;
 import android.app.ProgressDialog;
+import android.content.BroadcastReceiver;
+import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.os.Bundle;
+import android.os.RemoteException;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.Menu;
+import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.animation.Animation;
@@ -100,7 +106,7 @@ public class LockerList extends ListActivity
     // sense of the animation when changing menu
     private static final int TRANSLATION_LEFT = 0;
     private static final int TRANSLATION_RIGHT = 1;
-    private static final int MENU_LOGOUT = 0;
+    
     private static final int DIALOG_REFRESH = 0;
 
     private static final String TAG = "LockerList";
@@ -110,6 +116,7 @@ public class LockerList extends ListActivity
 
     // Stores browsing history within the activity
     private Stack<HistoryUnit> mHistory;
+    private IntentFilter mIntentFilter;
 
     /**
      * Encapsulates the required fields to store a browsing state.
@@ -165,7 +172,23 @@ public class LockerList extends ListActivity
 
         mHistory = new Stack<HistoryUnit>();
 
+        mIntentFilter = new IntentFilter();
+        mIntentFilter.addAction( Mp3tunesService.PLAYBACK_ERROR );
+        mIntentFilter.addAction( Mp3tunesService.META_CHANGED );
+        
         displayMainMenu( TRANSLATION_LEFT );
+    }
+    
+    @Override
+    protected void onSaveInstanceState( Bundle outState )
+    {
+        //TODO save state
+    }
+    
+    @Override
+    protected void onRestoreInstanceState( Bundle state )
+    {
+        //TODO restore state
     }
 
     @Override
@@ -177,11 +200,47 @@ public class LockerList extends ListActivity
 
         super.onDestroy();
     }
+    
+    @Override
+    public void onResume() {
+        registerReceiver( mStatusListener, mIntentFilter );
+        //We need to bind the player so we can see whether it's playing or not
+        //in order to properly display the Now Playing indicator if we've been
+        //relaunched after being killed.
+    
+        if(MP3tunesApplication.getInstance().player == null)
+            MP3tunesApplication.getInstance().bindPlayerService();
+        
+        super.onResume();
+    }
+    
+    private BroadcastReceiver mStatusListener = new BroadcastReceiver()
+    {
+        @Override
+        public void onReceive( Context context, Intent intent )
+        {
+
+            String action = intent.getAction();
+            if ( action.equals( Mp3tunesService.PLAYBACK_ERROR ) )
+            {
+
+            }
+            else if( action.equals( Mp3tunesService.META_CHANGED))
+            {
+                //Update now playing buttons after the service is re-bound
+                
+            }
+        }
+
+    };
 
     /** Creates the menu items */
     public boolean onCreateOptionsMenu( Menu menu )
     {
-        menu.add( 0, MENU_LOGOUT, 0, "Logout" ).setIcon( R.drawable.logout_light );
+        MenuInflater inflater = getMenuInflater();
+        inflater.inflate(R.menu.main, menu);
+
+
         return true;
     }
 
@@ -190,8 +249,13 @@ public class LockerList extends ListActivity
     {
         switch ( item.getItemId() )
         {
-        case MENU_LOGOUT:
+        case R.id.menu_opt_logout:
             logout();
+            return true;
+        case R.id.menu_opt_settings:
+            Intent intent;
+            intent = new Intent( LockerList.this, Preferences.class );
+            startActivity( intent );
             return true;
         }
         return false;
@@ -293,11 +357,35 @@ public class LockerList extends ListActivity
 
                 getListView().startAnimation( mRTLanim );
                 setListAdapter( adapterFromCursor( 0, R.drawable.song_icon, 1,
-                        R.drawable.right_play1 ) );
+                        R.drawable.right_play ) );
             }
             else if ( mPositionMenu == STATE.TRACK )
             {
-                System.out.println( "TRACK CLICKED!" );
+                ListAdapter a = ( ListAdapter ) getListAdapter();
+                int track_id = ( Integer ) a.getItem( pos );
+                mDb.clearPlaylist();
+                mDb.insertTrackPlaylist( track_id );
+                System.out.println("playlist size: " + mDb.getPlaylistSize());
+                
+
+                try
+                {
+                    if( MP3tunesApplication.getInstance().player != null ) 
+                    {
+                        MP3tunesApplication.getInstance().bindPlayerService();
+                        MP3tunesApplication.getInstance().player.start();
+                        Intent i = new Intent( LockerList.this, Player.class );
+                        i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                        startActivity( i );
+                    } else
+                        System.out.println("Player is null!");
+                    
+                }
+                catch ( RemoteException e )
+                {
+                    // TODO Auto-generated catch block
+                    e.printStackTrace();
+                }
             }
             else if ( mPositionMenu == STATE.PLAYLISTS )
             {

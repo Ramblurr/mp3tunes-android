@@ -1,22 +1,22 @@
 /***************************************************************************
-*   Copyright (C) 2009  Casey Link <unnamedrambler@gmail.com>             *
-*   Copyright (C) 2007-2008 sibyl project http://code.google.com/p/sibyl/ *
-*                                                                         *
-*   This program is free software; you can redistribute it and/or modify  *
-*   it under the terms of the GNU General Public License as published by  *
-*   the Free Software Foundation; either version 3 of the License, or     *
-*   (at your option) any later version.                                   *
-*                                                                         *
-*   This program is distributed in the hope that it will be useful,       *
-*   but WITHOUT ANY WARRANTY; without even the implied warranty of        *
-*   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         *
-*   GNU General Public License for more details.                          *
-*                                                                         *
-*   You should have received a copy of the GNU General Public License     *
-*   along with this program; if not, write to the                         *
-*   Free Software Foundation, Inc.,                                       *
-*   51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.         *
-***************************************************************************/
+ *   Copyright (C) 2009  Casey Link <unnamedrambler@gmail.com>             *
+ *   Copyright (C) 2007-2008 sibyl project http://code.google.com/p/sibyl/ *
+ *                                                                         *
+ *   This program is free software; you can redistribute it and/or modify  *
+ *   it under the terms of the GNU General Public License as published by  *
+ *   the Free Software Foundation; either version 3 of the License, or     *
+ *   (at your option) any later version.                                   *
+ *                                                                         *
+ *   This program is distributed in the hope that it will be useful,       *
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of        *
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         *
+ *   GNU General Public License for more details.                          *
+ *                                                                         *
+ *   You should have received a copy of the GNU General Public License     *
+ *   along with this program; if not, write to the                         *
+ *   Free Software Foundation, Inc.,                                       *
+ *   51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.         *
+ ***************************************************************************/
 
 package com.mp3tunes.android;
 
@@ -43,12 +43,11 @@ import com.binaryelysium.mp3tunes.api.LockerException;
 import com.binaryelysium.mp3tunes.api.Track;
 
 /**
- * This class is essentially a wrapper for storing
- * MP3tunes locker data in an sqlite databse.
- * It acts as a local cache of the metadata in a user's locker.
+ * This class is essentially a wrapper for storing MP3tunes locker data in an
+ * sqlite databse. It acts as a local cache of the metadata in a user's locker.
  * 
  * It is also used to handle the current playlist.
- *
+ * 
  */
 public class LockerDb
 {
@@ -57,22 +56,25 @@ public class LockerDb
     private Context mContext;
     private Locker mLocker;
     private SQLiteDatabase mDb;
-    
+
     private static final String DB_NAME = "locker.dat";
-    private static final int DB_VERSION =  1;
+    private static final int DB_VERSION = 1;
 
     public LockerDb( Context context, Locker locker )
     {
         // Open the database
-        mDb = (new LockerDbHelper(context, DB_NAME, null, DB_VERSION)).getWritableDatabase();
-        if( mDb == null ){
-            throw new SQLiteDiskIOException("Error creating database");
+        mDb = ( new LockerDbHelper( context, DB_NAME, null, DB_VERSION ) ).getWritableDatabase();
+        if ( mDb == null )
+        {
+            throw new SQLiteDiskIOException( "Error creating database" );
         }
 
         mLocker = locker;
         mContext = context;
         long lastupdate = MP3tunesApplication.getInstance().getLastUpdate();
-        mCache = new LockerCache( lastupdate, 8640000, false ); // TODO handle cache timeout properly
+        mCache = new LockerCache( lastupdate, 8640000, false ); // TODO handle
+        // cache timeout
+        // properly
     }
 
     public void close()
@@ -80,175 +82,313 @@ public class LockerDb
         if ( mDb != null )
             mDb.close();
     }
-    
+
     public void clearDB()
     {
-        mDb.delete("track", null, null);
-        mDb.delete("album", null, null);
-        mDb.delete("artist", null, null);
-//        mDb.execSQL("DELETE FROM current_playlist");
+        mDb.delete( "track", null, null );
+        mDb.delete( "album", null, null );
+        mDb.delete( "artist", null, null );
+        // mDb.execSQL("DELETE FROM current_playlist");
     }
-    
-    public void insert(Track track) throws IOException, SQLiteException {
 
-        if(track == null)
+    /**
+     * Inserts a track into the database cache
+     * @param track
+     * @throws IOException
+     * @throws SQLiteException
+     */
+    public void insert( Track track ) throws IOException, SQLiteException
+    {
+
+        if ( track == null )
         {
-            System.out.println("OMG TRACK NULL");
+            System.out.println( "OMG TRACK NULL" );
             return;
         }
         int artist = 0, album = 0; // = 0 -> last value, !=0 -> null or select
-        //, album = false, genre = false;
-        mDb.execSQL("BEGIN TRANSACTION");
-        try{
-            if(track.getArtistName().length() > 0) {
-                ContentValues cv = new ContentValues(2);
-                cv.put("_id", track.getArtistId());
-                cv.put("artist_name", track.getArtistName());
-                
-                Cursor c = mDb.query("artist", new String[]{"_id"}, "_id='"+track.getArtistId()+"'", null, null, null, null);
-                if(c.moveToNext())
-                    artist = c.getInt(0);
+        // , album = false, genre = false;
+        mDb.execSQL( "BEGIN TRANSACTION" );
+        try
+        {
+            if ( track.getArtistName().length() > 0 )
+            {
+                ContentValues cv = new ContentValues( 2 );
+                cv.put( "_id", track.getArtistId() );
+                cv.put( "artist_name", track.getArtistName() );
+
+                Cursor c = mDb.query( "artist", new String[] { "_id" }, "_id='"
+                        + track.getArtistId() + "'", null, null, null, null );
+                if ( c.moveToNext() )
+                    artist = c.getInt( 0 );
                 else
                     mDb.insert( "artist", "Unknown", cv );
                 c.close();
-            }else{
+            }
+            else
+            {
                 artist = 1;
             }
-            /* TODO determine whether the fancy ContentValues means of performing queries 
-             * is faster than the regular rawQuery + string a concatentation method.            
+            /*
+             * TODO determine whether the fancy ContentValues means of
+             * performing queries is faster than the regular rawQuery + string a
+             * concatentation method.
              */
-            if(track.getAlbumTitle().length() > 0) {
-                ContentValues cv = new ContentValues(2);
+            if ( track.getAlbumTitle().length() > 0 )
+            {
+                ContentValues cv = new ContentValues( 2 );
                 cv.put( "_id", track.getAlbumId() );
                 cv.put( "album_name", track.getAlbumTitle() );
                 cv.put( "artist_id", track.getArtistId() );
-                Cursor c = mDb.query("album", new String[]{"_id"}, "_id='"+track.getAlbumId()+"'", null, null, null, null);
-//                Cursor c = mDb.rawQuery("SELECT _id FROM album WHERE _id='"+track.getAlbumId()+"'" ,null);
-                if(c.moveToNext())
-                    artist = c.getInt(0);
+                Cursor c = mDb.query( "album", new String[] { "_id" }, "_id='" + track.getAlbumId()
+                        + "'", null, null, null, null );
+                // Cursor c =
+                // mDb.rawQuery("SELECT _id FROM album WHERE _id='"+track.getAlbumId()+"'"
+                // ,null);
+                if ( c.moveToNext() )
+                    artist = c.getInt( 0 );
                 else
                     mDb.insert( "album", "Unknown", cv );
-//                    mDb.execSQL("INSERT INTO album(_id, album_name) VALUES("+track.getAlbumId()+", '"+track.getAlbumTitle()+"')");
+                // mDb.execSQL("INSERT INTO album(_id, album_name) VALUES("+track.getAlbumId()+", '"+track.getAlbumTitle()+"')");
                 c.close();
-            }else{
+            }
+            else
+            {
                 album = 1;
             }
-            
-            Cursor c = mDb.query("track", new String[]{"_id"}, "_id='"+track.getId()+"'", null, null, null, null);
-            if(!c.moveToNext())
+
+            Cursor c = mDb.query( "track", new String[] { "_id" }, "_id='" + track.getId() + "'",
+                    null, null, null, null );
+            if ( !c.moveToNext() )
             {
-                ContentValues cv = new ContentValues(7);
-                cv.put("_id", track.getId());
-                cv.put("play_url", track.getPlayUrl());
-                cv.put("download_url", track.getDownloadUrl());
-                cv.put("title", track.getTitle());
-                cv.put("track", track.getNumber());
-                cv.put("artist_id", track.getArtistId());
-                cv.put("album_id", track.getAlbumId());
-                cv.put("cover_url", track.getAlbumArt());
+                ContentValues cv = new ContentValues( 7 );
+                cv.put( "_id", track.getId() );
+                cv.put( "play_url", track.getPlayUrl() );
+                cv.put( "download_url", track.getDownloadUrl() );
+                cv.put( "title", track.getTitle() );
+                cv.put( "track", track.getNumber() );
+                cv.put( "artist_name", track.getArtistName() );
+                cv.put( "album_name", track.getAlbumTitle() );
+                cv.put( "artist_id", track.getArtistId() );
+                cv.put( "album_id", track.getAlbumId() );
+                cv.put( "cover_url", track.getAlbumArt() );
                 mDb.insert( "track", "Unknown", cv );
             }
             c.close();
-//            mDb.execSQL("INSERT INTO track(_id, play_url, download_url, title, track, artist_id, album_id, cover_url) VALUES('"+
-//                    track.getId()+"','"+
-//                    track.getPlayUrl().replace("'", "''")+"','"+
-//                    track.getDownloadUrl().replace("'", "''")+"','"+
-//                    track.getTitle()+"',"+
-//                    track.getNumber()+","+
-//                    track.getArtistId()+","+
-//                    track.getAlbumId()+",'"+
-//                    (track.getAlbumArt() != null ? track.getAlbumArt().replace("'", "''") : "" ) +"')");
-            
-            mDb.execSQL("COMMIT TRANSACTION");
 
-         }catch(SQLiteException e){
-            mDb.execSQL("ROLLBACK");
+            mDb.execSQL( "COMMIT TRANSACTION" );
+
+        }
+        catch ( SQLiteException e )
+        {
+            mDb.execSQL( "ROLLBACK" );
             throw e;
         }
     }
-    
-    public Cursor getTableList(Music.Meta type) {
-        
+
+    public Cursor getTableList( Music.Meta type )
+    {
+
         if ( mCache.isCacheValid( LockerCache.ARTIST ) )
         {
-            System.out.println("Cache valid");
-            switch(type){
-                case TRACK :
-                    return mDb.query( "track", new String[]{"title", "_id", "track" }, null, null, null, null, "title" );
-                case ALBUM :
-                    return mDb.query( "album", new String[]{"album_name", "_id", "track_count" }, null, null, null, null, "album_name" );
-                case ARTIST :
-                    return mDb.query( "artist", new String[]{"artist_name","_id" }, null, null, null, null, "artist_name" );
-                default : return null;
+            System.out.println( "Cache valid" );
+            switch ( type )
+            {
+            case TRACK:
+                return mDb.query( "track", new String[] { "title", "_id", "track" }, null, null,
+                        null, null, "title" );
+            case ALBUM:
+                return mDb.query( "album", new String[] { "album_name", "_id", "track_count" },
+                        null, null, null, null, "album_name" );
+            case ARTIST:
+                return mDb.query( "artist", new String[] { "artist_name", "_id" }, null, null,
+                        null, null, "artist_name" );
+            default:
+                return null;
             }
         }
-        System.out.println("Cache invalid");
+        System.out.println( "Cache invalid" );
         return null;
     }
-    
+
     /**
      * 
      * @param albumId
      * @return 0 : album name, 1 : artist name, 2 : artist id. track count
      */
-    public Cursor getAlbumInfo(int albumId){
+    public Cursor getAlbumInfo( int albumId )
+    {
         // because 1 is for unknown songs
-        if(albumId == 1) return null;
+        if ( albumId == 1 )
+            return null;
 
-        return mDb.rawQuery("SELECT album_name, artist_name, artist_id, track_count " +
-                "FROM  album " +
-                "WHERE album._id="+albumId, null);
+        return mDb.rawQuery( "SELECT album_name, artist_name, artist_id, track_count "
+                + "FROM  album " + "WHERE album._id=" + albumId, null );
     }
-    
+
     /**
      * 
      * @param artist_id
-     * @return 0: _id  1: album_name
+     * @return 0: _id 1: album_name
      */
-    public Cursor getAlbumsForArtist(int artist_id)
+    public Cursor getAlbumsForArtist( int artist_id )
     {
-        System.out.println("querying for albums by: " + artist_id);
-        Cursor c = mDb.rawQuery( "SELECT artist_name FROM artist WHERE _id="+artist_id, null );
-        if(c.moveToNext())
-            System.out.println("Found: " + c.getString( 0 ));
-        return mDb.query("album", new String[]{"_id", "album_name"}, "artist_id="+artist_id, null, null, null, "album_name");
+        System.out.println( "querying for albums by: " + artist_id );
+        Cursor c = mDb.rawQuery( "SELECT artist_name FROM artist WHERE _id=" + artist_id, null );
+        if ( c.moveToNext() )
+            System.out.println( "Found: " + c.getString( 0 ) );
+        return mDb.query( "album", new String[] { "_id", "album_name" }, "artist_id=" + artist_id,
+                null, null, null, "album_name" );
     }
-    
+
     /**
      * 
      * @param albumName
      * @return 0 : artist_name
      */
-    public Cursor getArtistFromAlbum(String albumName){
-        return mDb.rawQuery("SELECT DISTINCT artist_name" +
-                " FROM artist, track, album" +
-                " WHERE album_name='"+albumName+"'"+
-                " AND album._id=track.album_id"+
-                " AND track.artist_id=artist._id" +
-                " ORDER BY artist_name"
-                , null);
+    public Cursor getArtistFromAlbum( String albumName )
+    {
+        return mDb.rawQuery( "SELECT DISTINCT artist_name" + " FROM artist, track, album"
+                + " WHERE album_name='" + albumName + "'" + " AND album._id=track.album_id"
+                + " AND track.artist_id=artist._id" + " ORDER BY artist_name", null );
     }
-    
+
     /**
      * 
      * @param album_id
-     * @return 0: _id 1: title 2: artist_name 3:artist_id 4:album_name 5:album_id 6:track 7:play_url 8:download_url 9:cover_url
+     * @return 0: _id 1: title 2: artist_name 3:artist_id 4:album_name
+     *         5:album_id 6:track 7:play_url 8:download_url 9:cover_url
      */
-    public Cursor getTracksForAlbum(int album_id)
+    public Cursor getTracksForAlbum( int album_id )
     {
-        return mDb.query("track", Music.TRACK, "album_id="+album_id, null, null, null, "track");
+        return mDb.query( "track", Music.TRACK, "album_id=" + album_id, null, null, null, "track" );
     }
-    
+
     /**
      * 
      * @param trackId
-     * @return 0: title 1: artist_name 2:artist_id 3:album_name 4:album_id 5:track 6:play_url 7:download_url 8:cover_url
+     * @return 0: title 1: artist_name 2:artist_id 3:album_name 4:album_id
+     *         5:track 6:play_url 7:download_url 8:cover_url
      */
-    public Cursor getTrackFromAlbum(int trackId)
+    public Cursor getTrackFromAlbum( int trackId )
     {
-     return mDb.rawQuery("SELECT title, artist_name, artist_id, album_name, album_id, track, play_url, download_url, cover_url " +
-               " FROM track" +
-               " WHERE track._id="+trackId, null);
+        return mDb
+                .rawQuery(
+                        "SELECT title, artist_name, artist_id, album_name, album_id, track, play_url, download_url, cover_url "
+                                + " FROM track" + " WHERE track._id=" + trackId, null );
+    }
+    
+    public Album getAlbumFromTrack( int album_id )
+    {
+        Cursor c = mDb.query("album", Music.ALBUM, "album._id="+album_id, null, null, null, null);
+        if ( !c.moveToFirst() )
+        {
+            c.close();
+            return null;
+        }
+        
+//        Album a = new Album()
+        return null;
+    }
+
+    /**
+     * return the song at pos in the playlist
+     * 
+     * @param pos NOTE: Positions are 1 indexed i.e., the first song is @ pos = 1
+     * @return a complete Track obj of the song
+     */
+    public Track getTrackPlaylist( int pos )
+    {
+        Cursor c = mDb.query( "track, current_playlist", Music.TRACK, "current_playlist.pos=" + pos, null, null, null, null );
+//        Cursor c = mDb.rawQuery("SELECT play_url FROM song, current_playlist WHERE pos="+pos+" AND song._id=current_playlist.id", null);
+        if ( !c.moveToFirst() )
+        {
+            c.close();
+            return null;
+        }
+        
+        Track t = new Track(
+                c.getInt( Music.TRACK_MAPPING.ID ),
+                c.getString( Music.TRACK_MAPPING.PLAY_URL ),
+                c.getString( Music.TRACK_MAPPING.DOWNLOAD_URL ),
+                c.getString( Music.TRACK_MAPPING.TITLE ),
+                c.getInt( Music.TRACK_MAPPING.TRACKNUM ),
+                c.getInt( Music.TRACK_MAPPING.ARTIST_ID ),
+                c.getString( Music.TRACK_MAPPING.ARTIST_NAME ),
+                c.getInt( Music.TRACK_MAPPING.ALBUM_ID ),
+                c.getString( Music.TRACK_MAPPING.ALBUM_NAME ),
+                c.getString( Music.TRACK_MAPPING.COVER_URL ) );
+        c.close();
+        return t;
+    }
+    
+    /**
+     * insert several tracks into the playlist
+     * Note: the song ids are not verified!
+     * @param ids the songs ids
+     */
+    public void insertTracksPlaylist( int[] ids )
+    {
+        for( int id : ids )
+        {
+            insertTrackPlaylist( id );
+        }
+    }
+    
+    /**
+     * insert one track into the playlist
+     * Note: the song ids are not verified!
+     * @param ids the song id
+     */
+    public void insertTrackPlaylist( int id )
+    {
+        mDb.execSQL("INSERT INTO current_playlist(track_id) VALUES("+id+")");
+    }
+    
+    /**
+     * Insert an entire artist into the playlist.
+     * @param id the artist id
+     */
+    public void insertArtistPlaylist( int id )
+    {
+        mDb.execSQL("INSERT INTO current_playlist(track_id) " +
+                "SELECT track._id FROM track " +
+                "WHERE track.artist_id = " + id);
+    }
+    
+    /**
+     * Insert an entire album into the playlist.
+     * @param id album id
+     */
+    public void insertAlbumPlaylist( int id )
+    {
+        mDb.execSQL("INSERT INTO current_playlist(track_id) " +
+                "SELECT track._id FROM track " +
+                "WHERE track.album_id = " + id);
+    }
+    
+    /**
+     * Returns the size of the current playlist
+     *
+     * @return  size of the playlist or -1 if an error occurs
+     */
+    public int getPlaylistSize()
+    {
+        int size = -1;
+        Cursor c = mDb.rawQuery("SELECT COUNT(track_id) FROM current_playlist" ,null);
+        if(c.moveToFirst())
+        {
+            size = c.getInt(0);
+        }
+        c.close();
+        return size;
+    }
+    
+    /**
+     * Clear the current playlist
+     */
+    public void clearPlaylist()
+    {
+        mDb.execSQL("DELETE FROM current_playlist");
     }
     
     public void refreshCache() throws SQLiteException, IOException
@@ -256,23 +396,23 @@ public class LockerDb
         clearDB();
         ArrayList<Track> tracks = new ArrayList<Track>( mLocker.getTracks() );
         int lim = tracks.size();
-        System.out.println("beginning insertion of " + lim + " tracks");
+        System.out.println( "beginning insertion of " + lim + " tracks" );
         for ( int i = 0; i < lim; i++ )
         {
             insert( tracks.get( i ) );
         }
-        System.out.println("insertion complete");
+        System.out.println( "insertion complete" );
         mCache.setUpdate( System.currentTimeMillis(), LockerCache.ARTIST );
     }
-    
+
     /**
      * Manages connecting, creating, and updating the database
      */
-    
     private class LockerDbHelper extends SQLiteOpenHelper
     {
-        
+
         private Context mC;
+
         public LockerDbHelper( Context context, String name, CursorFactory factory, int version )
         {
             super( context, name, factory, version );
@@ -282,40 +422,18 @@ public class LockerDb
         @Override
         public void onCreate( SQLiteDatabase db )
         {
-            db.execSQL("CREATE TABLE track("+
-                    "_id INTEGER PRIMARY KEY,"+
-                    "play_url VARCHAR,"+
-                    "download_url VARCHAR,"+
-                    "title VARCHAR,"+
-                    "track NUMBER(2) DEFAULT 0,"+
-                    "artist_id INTEGER,"+
-                    "artist_name VARCHAR,"+
-                    "album_id INTEGER,"+
-                    "album_name VARCHAR,"+
-                    "cover_url VARCHAR DEFAULT NULL"+
-                    ")"
-            );
-            db.execSQL("CREATE TABLE artist("+
-                    "_id INTEGER PRIMARY KEY,"+
-                    "artist_name VARCHAR,"+
-                    "album_count INTEGER," +
-                    "track_count INTEGER" +
-                    " )"
-            );
-            db.execSQL("CREATE TABLE album("+
-                    "_id INTEGER PRIMARY KEY,"+
-                    "album_name VARCHAR, "+
-                    "artist_id INTEGER,"+
-                    "artist_name VARCHAR,"+
-                    "track_count INTEGER,"+
-                    "cover_url VARCHAR DEFAULT NULL"+
-                    ")"
-            );
-            db.execSQL("CREATE TABLE current_playlist("+
-                    "pos INTEGER PRIMARY KEY,"+
-                    "id INTEGER"+
-                    ")"
-            );
+            db.execSQL( "CREATE TABLE track(" + "_id INTEGER PRIMARY KEY," + "play_url VARCHAR,"
+                    + "download_url VARCHAR," + "title VARCHAR," + "track NUMBER(2) DEFAULT 0,"
+                    + "artist_id INTEGER," + "artist_name VARCHAR," + "album_id INTEGER,"
+                    + "album_name VARCHAR," + "cover_url VARCHAR DEFAULT NULL" + ")" );
+            db.execSQL( "CREATE TABLE artist(" + "_id INTEGER PRIMARY KEY,"
+                    + "artist_name VARCHAR," + "album_count INTEGER," + "track_count INTEGER"
+                    + " )" );
+            db.execSQL( "CREATE TABLE album(" + "_id INTEGER PRIMARY KEY," + "album_name VARCHAR, "
+                    + "artist_id INTEGER," + "artist_name VARCHAR," + "track_count INTEGER,"
+                    + "year INTEGER," + "cover_url VARCHAR DEFAULT NULL" + ")" );
+            db.execSQL( "CREATE TABLE current_playlist(" + "pos INTEGER PRIMARY KEY,"
+                    + "track_id INTEGER" + ")" );
 
         }
 
@@ -323,18 +441,18 @@ public class LockerDb
         public void onUpgrade( SQLiteDatabase db, int oldV, int newV )
         {
 
-            db.execSQL("DROP TABLE IF EXISTS current_playlist");
-            db.execSQL("DROP TABLE IF EXISTS album");
-            db.execSQL("DROP TABLE IF EXISTS artist");
-            db.execSQL("DROP TABLE IF EXISTS track");
-            db.execSQL("DROP TABLE IF EXISTS directory");
-            onCreate(db);
+            db.execSQL( "DROP TABLE IF EXISTS current_playlist" );
+            db.execSQL( "DROP TABLE IF EXISTS album" );
+            db.execSQL( "DROP TABLE IF EXISTS artist" );
+            db.execSQL( "DROP TABLE IF EXISTS track" );
+            db.execSQL( "DROP TABLE IF EXISTS directory" );
+            onCreate( db );
         }
-        
-        public SQLiteDatabase getWritableDatabase() 
+
+        public SQLiteDatabase getWritableDatabase()
         {
-            return super.getWritableDatabase() ;
-            
+            return super.getWritableDatabase();
+
         }
 
     }

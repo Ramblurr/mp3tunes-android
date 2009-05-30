@@ -25,16 +25,21 @@ import java.util.WeakHashMap;
 
 import android.app.AlertDialog;
 import android.app.Application;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.DialogInterface;
+import android.content.Intent;
+import android.content.ServiceConnection;
 import android.content.SharedPreferences;
+import android.os.IBinder;
 
 
 public class MP3tunesApplication extends Application
 {
 
     public WeakHashMap map; // used to store global instance specific data
-    public static final String LAST_UPDATE = "LastUpdate"; // for SharedPreferences 
+    public static final String LAST_UPDATE = "LastUpdate"; // for SharedPreferences
+    public com.mp3tunes.android.service.ITunesService player = null;
 
     private static MP3tunesApplication instance;
     private Context mCtx;
@@ -121,5 +126,34 @@ public class MP3tunesApplication extends Application
         editor.putLong( "last_update", -1 );
         editor.commit();
     }
+    
+    public void bindPlayerService() {
+        // start our media player service
+        Intent mpIntent = new Intent(
+                this,
+                com.mp3tunes.android.service.Mp3tunesService.class );
+        startService(mpIntent);
+        boolean b = bindService( mpIntent, mConnection, BIND_AUTO_CREATE );
+        if ( !b )
+        {
+            // something went wrong
+            // mHandler.sendEmptyMessage(QUIT);
+            System.out.println( "Binding to service failed " + mConnection );
+        }
+    }
+    
+    private ServiceConnection mConnection = new ServiceConnection()
+    {
+
+        public void onServiceConnected( ComponentName className, IBinder service )
+        {
+            player = com.mp3tunes.android.service.ITunesService.Stub.asInterface( service );
+        }
+
+        public void onServiceDisconnected( ComponentName className )
+        {
+            player = null;
+        }
+    };
 
 }

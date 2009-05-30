@@ -28,6 +28,7 @@ import java.util.Timer;
 import java.util.TimerTask;
 
 import com.binaryelysium.mp3tunes.api.Track;
+import com.db4o.internal.cs.messages.MCreateClass;
 import com.mp3tunes.android.LockerDb;
 import com.mp3tunes.android.MP3tunesApplication;
 import com.mp3tunes.android.Music;
@@ -612,27 +613,6 @@ public class Mp3tunesService extends Service
     private final ITunesService.Stub mBinder = new ITunesService.Stub()
     {
 
-        public String getAlbumName() throws RemoteException
-        {
-            if ( mServiceState != STATE.PLAYING && mServiceState != STATE.PAUSED )
-                throw new RemoteException();
-            return mCurrentTrack.getAlbumTitle();
-        }
-
-        public String getArtUrl() throws RemoteException
-        {
-            if ( mServiceState != STATE.PLAYING && mServiceState != STATE.PAUSED )
-                throw new RemoteException();
-            return mCurrentTrack.getAlbumArt();
-        }
-
-        public String getArtistName() throws RemoteException
-        {
-            if ( mServiceState != STATE.PLAYING && mServiceState != STATE.PAUSED )
-                throw new RemoteException();
-            return mCurrentTrack.getArtistName();
-        }
-
         public int getBufferPercent() throws RemoteException
         {
             
@@ -740,6 +720,32 @@ public class Mp3tunesService extends Service
         public Bitmap getAlbumArt() throws RemoteException
         {
             return mAlbumArt;
+        }
+
+        /* Returns the meta data of the current track
+        0: track name
+        1: track id
+        2: artist name
+        3: artist id
+        4: album name
+        5: album id
+       */
+        public String[] getMetadata() throws RemoteException
+        {
+            if ( mServiceState != STATE.PLAYING && mServiceState != STATE.PAUSED )
+                throw new RemoteException();
+
+            String[] data = { mCurrentTrack.getTitle(), Integer.toString( mCurrentTrack.getId() ), mCurrentTrack.getArtistName(), 
+                    Integer.toString( mCurrentTrack.getArtistId() ), mCurrentTrack.getAlbumTitle(), Integer.toString(mCurrentTrack.getAlbumId() ) };
+            
+            return data;
+        }
+
+        public String getArtUrl() throws RemoteException
+        {
+            if ( mServiceState != STATE.PLAYING && mServiceState != STATE.PAUSED )
+                throw new RemoteException();
+            return mCurrentTrack.getAlbumArt(); 
         }
 
     };

@@ -31,15 +31,17 @@ interface ITunesService {
 	
 	/* Get the repeat state */
 	int getRepeatMode();
+
 	
-	/* Returns the current track's artist name*/
-	String getArtistName();
-	
-	/* Returns the current track's album name*/
-	String getAlbumName();
-	
-	/* Returns the current track name */
-	String getTrackName();
+	/* Returns the meta data of the current track
+	 0: track name
+	 1: track id
+	 2: artist name
+	 3: artist id
+	 4: album name
+	 5: album id
+	*/
+	String[] getMetadata();
 	
 	String getArtUrl();
 	Bitmap getAlbumArt();

@@ -21,5 +21,19 @@
 				<category android:name="android.intent.category.DEFAULT"/>
 			</intent-filter>
 		</activity>
+		<activity android:name=".activity.Player" android:label="MP3tunes Locker Player" android:configChanges="keyboardHidden">
+			<intent-filter>
+				<action android:name="android.intent.action.VIEW"/>
+				<category android:name="android.intent.category.DEFAULT"/>
+			</intent-filter>
+		</activity>
+        <activity android:name=".activity.Preferences">
+              <intent-filter>
+                  <action android:name="android.intent.action.VIEW"/>
+                  <category android:name="android.intent.category.DEFAULT"/>
+              </intent-filter>
+          </activity>
+        
+		<service android:name=".service.Mp3tunesService"  />
     </application>
 </manifest> 
