@@ -30,9 +30,12 @@ public class Music
 
     public static enum Meta
     {
-        TRACK, ARTIST, ALBUM, CURRENT_PLAYLIST;
+        TRACK, ARTIST, ALBUM, PLAYLIST, CURRENT_PLAYLIST;
     }
     
+    public static String[] ARTIST = { "_id", "artist_name" };
+    
+    public static String[] PLAYLIST = { "_id", "playlist_name", "file_count", "file_name" };
     
     public static String[] ALBUM  = { "_id","album_name", "artist_id", "artist_name", "track_count", "cover_url" };
 

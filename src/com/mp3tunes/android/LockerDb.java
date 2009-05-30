@@ -40,6 +40,7 @@ import com.binaryelysium.mp3tunes.api.Album;
 import com.binaryelysium.mp3tunes.api.Artist;
 import com.binaryelysium.mp3tunes.api.Locker;
 import com.binaryelysium.mp3tunes.api.LockerException;
+import com.binaryelysium.mp3tunes.api.Playlist;
 import com.binaryelysium.mp3tunes.api.Track;
 
 /**
@@ -230,7 +231,7 @@ public class LockerDb
     {
         if ( album == null )
         {
-            System.out.println( "OMG Artist NULL" );
+            System.out.println( "OMG Album NULL" );
             return;
         }
         try
@@ -264,6 +265,43 @@ public class LockerDb
             throw e;
         }
     }
+    
+    public void insertPlaylist( Playlist playlist) throws IOException, SQLiteException
+    {
+        if ( playlist == null )
+        {
+            System.out.println( "OMG Playlist NULL" );
+            return;
+        }
+        try
+        {
+            if ( playlist.getName().length() > 0 )
+            {
+                ContentValues cv = new ContentValues( 2 );
+                cv.put( "_id", playlist.getId() );
+                cv.put( "playlist_name", playlist.getName() );
+                cv.put( "file_count", playlist.getCount() );
+                cv.put( "file_name", playlist.getFileName() );
+
+                Cursor c = mDb.query( "playlist", new String[] { "_id" }, "_id='"
+                        + playlist.getId() + "'", null, null, null, null );
+
+                if ( !c.moveToNext() ) // album doesn't exist
+                    mDb.insert( "playlist", "Unknown", cv );
+                else // album exists, so lets update with new data
+                {
+                    cv.remove( "_id" );
+                    mDb.update( "playlist", cv, "_id='" + playlist.getId() + "'", null );
+                }
+
+                c.close();
+            }
+        }
+        catch ( SQLiteException e )
+        {
+            throw e;
+        }
+    }
 
     public Cursor getTableList( Music.Meta type )
     {
@@ -283,6 +321,10 @@ public class LockerDb
                 if ( !mCache.isCacheValid( LockerCache.ARTIST ) )
                     refreshArtists();
                 return queryArtists();
+            case PLAYLIST:
+                if ( !mCache.isCacheValid( LockerCache.PLAYLIST ) )
+                    refreshPlaylists();
+                return queryPlaylists();
             default:
                 return null;
             }
@@ -301,33 +343,47 @@ public class LockerDb
         return null;
     }
     
+    private Cursor queryPlaylists()
+    {
+        return mDb.query( "playlist", Music.PLAYLIST, null, null, null, null, Music.PLAYLIST[1] );   
+    }
+    
+    private Cursor queryPlaylists( int playlist_id )
+    {
+        String selection = "track._id, title, artist_name, artist_id, album_name, album_id, track, play_url, download_url, cover_url";
+        return mDb.rawQuery( 
+                "SELECT DISTINCT " + selection + " FROM playlist " +
+                "JOIN playlist_tracks ON playlist._id = playlist_tracks.playlist_id " +
+                "JOIN track ON playlist_tracks.track_id = track._id " +
+                "WHERE playlist_id="+playlist_id, null );
+   
+    }
+    
     private Cursor queryArtists()
     {
-        return mDb.query( "artist", new String[] { "_id", "artist_name" }, null, null,
-                null, null, "artist_name" );   
+        return mDb.query( "artist", Music.ARTIST, null, null,
+                null, null, Music.ARTIST[1] );   
     }
     
     private Cursor queryAlbums()
     {
-        return mDb.query( "album", new String[] { "_id", "album_name", "track_count" },
-                null, null, null, null, "album_name" );
+        return mDb.query( "album", Music.ALBUM, null, null, null, null, Music.ALBUM[Music.ALBUM_MAPPING.ALBUM_NAME] );
     }
     
     private Cursor queryAlbums( int artist_id )
     {
         return  mDb.query( "album", Music.ALBUM, "artist_id=" + artist_id,
-                null, null, null, "album_name" );  
+                null, null, null, Music.ALBUM[Music.ALBUM_MAPPING.ALBUM_NAME] );  
     }
     
     private Cursor queryTracks()
     {
-        return mDb.query( "track", new String[] { "_id", "title", "track" }, null, null,
-                null, null, "title" );
+        return mDb.query( "track", Music.TRACK, null, null, null, null, Music.TRACK[Music.TRACK_MAPPING.TITLE] );
     }
 
     private Cursor queryTracks( int album_id )
     {
-        return mDb.query( "track", Music.TRACK, "album_id=" + album_id, null, null, null, "track" );
+        return mDb.query( "track", Music.TRACK, "album_id=" + album_id, null, null, null, Music.TRACK[Music.TRACK_MAPPING.TRACKNUM] );
     }
 
     /**
@@ -438,33 +494,41 @@ public class LockerDb
         }
         return null;
     }
-
-    /**
-     * 
-     * @param trackId
-     * @return 0: title 1: artist_name 2:artist_id 3:album_name 4:album_id
-     *         5:track 6:play_url 7:download_url 8:cover_url
-     */
-    public Cursor getTrackFromAlbum( int trackId )
-    {
-        return mDb
-                .rawQuery(
-                        "SELECT title, artist_name, artist_id, album_name, album_id, track, play_url, download_url, cover_url "
-                                + " FROM track" + " WHERE track._id=" + trackId, null );
-    }
     
-    public Album getAlbumFromTrack( int album_id )
+    public Cursor getTracksForPlaylist( int playlist_id )
     {
-        Cursor c = mDb.query("album", Music.ALBUM, "album._id="+album_id, null, null, null, null);
-        if ( !c.moveToFirst() )
-        {
-            c.close();
+        Cursor c = mDb.rawQuery( "SELECT playlist_name FROM playlist WHERE _id=" + playlist_id, null );
+        if ( !c.moveToNext() ) {
+            //TODO fetch the playlist?
+            Log.e( "Mp3tunes", "Error playlist doesnt exist" );
             return null;
         }
-        
-//        Album a = new Album()
+        c.close();
+        c = queryPlaylists( playlist_id );
+
+        if( c.getCount() > 0 )
+            return c;
+        else
+            c.close();
+        try
+        {
+            refreshTracksforPlaylist( playlist_id );
+            return queryPlaylists( playlist_id );  
+        }
+        catch ( SQLiteException e )
+        {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+        catch ( IOException e )
+        {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
         return null;
     }
+    
+    
 
     /**
      * return the song at pos in the playlist
@@ -580,6 +644,19 @@ public class LockerDb
         mCache.setUpdate( System.currentTimeMillis(), LockerCache.TRACK );
     }
     
+    private void refreshPlaylists()  throws SQLiteException, IOException
+    {
+        ArrayList<Playlist> playlists = new ArrayList<Playlist>( mLocker.getPlaylists() );
+        int lim = playlists.size();
+        System.out.println( "beginning insertion of " + lim + " playlists" );
+        for ( int i = 0; i < lim; i++ )
+        {
+            insertPlaylist( playlists.get( i ) );
+        }
+        System.out.println( "insertion complete" );
+        mCache.setUpdate( System.currentTimeMillis(), LockerCache.PLAYLIST );
+    }
+    
     private void refreshArtists()  throws SQLiteException, IOException
     {
         ArrayList<Artist> artists = new ArrayList<Artist>( mLocker.getArtists() );
@@ -629,6 +706,24 @@ public class LockerDb
         }
         System.out.println( "insertion complete" );
     }
+    
+    private void refreshTracksforPlaylist(int playlist_id)  throws SQLiteException, IOException
+    {
+        ArrayList<Track> tracks = new ArrayList<Track>( mLocker.getTracksForPlaylist( playlist_id ));
+        int lim = tracks.size();
+        System.out.println( "beginning insertion of " + lim + " tracks for playlist id " +playlist_id );
+        
+        mDb.delete( "playlist_tracks", "playlist_id=" + playlist_id, null );
+        for ( int i = 0; i < lim; i++ )
+        {
+            ContentValues cv = new ContentValues(); // TODO move this outside the loop?
+            insertTrack( tracks.get( i ) );
+            cv.put("playlist_id", playlist_id);
+            cv.put( "track_id", tracks.get( i ).getId() );
+            mDb.insert( "playlist_tracks", "Unknown", cv );
+        }
+        System.out.println( "insertion complete" );
+    }
 
     /**
      * Manages connecting, creating, and updating the database
@@ -657,6 +752,9 @@ public class LockerDb
             db.execSQL( "CREATE TABLE album(" + "_id INTEGER PRIMARY KEY," + "album_name VARCHAR, "
                     + "artist_id INTEGER," + "artist_name VARCHAR," + "track_count INTEGER,"
                     + "year INTEGER," + "cover_url VARCHAR DEFAULT NULL" + ")" );
+            db.execSQL( "CREATE TABLE playlist(" + "_id INTEGER PRIMARY KEY," + "playlist_name VARCHAR, "
+                    + "file_count INTEGER," + "file_name VARCHAR" + ")" );
+            db.execSQL( "CREATE TABLE playlist_tracks(" + "playlist_id INTEGER," + "track_id INTEGER" + ")" );
             db.execSQL( "CREATE TABLE current_playlist(" + "pos INTEGER PRIMARY KEY,"
                     + "track_id INTEGER" + ")" );
 

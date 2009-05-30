@@ -154,8 +154,8 @@ public class LockerList extends ListActivity
         getListView().setAnimationCacheEnabled( false );
 
         try
-        // establish a connection with the database
         {
+            // establish a connection with the database
             mDb = new LockerDb( this, mLocker );
 
         }
@@ -168,10 +168,6 @@ public class LockerList extends ListActivity
             MP3tunesApplication.getInstance().presentError( getApplicationContext(), "a", "" );
             logout();
         }
-
-        // Refresh the locker asyncronously
-        // TODO this takes an extremely long time on large lockers
-//        new RefreshCacheTask().execute();
 
         mHistory = new Stack<HistoryUnit>();
 
@@ -383,6 +379,9 @@ public class LockerList extends ListActivity
             }
             else if ( mPositionMenu == STATE.PLAYLISTS )
             {
+                ListAdapter a = ( ListAdapter ) getListAdapter();
+                int playlist_id = ( Integer ) a.getItem( pos );
+                new FetchPlaylistsTask().execute( TRANSLATION_LEFT, playlist_id );
 
             }
             else if ( mPositionMenu == STATE.SEARCH )
@@ -425,7 +424,7 @@ public class LockerList extends ListActivity
             break;
 
         case R.string.playlists:
-            mPositionMenu = STATE.PLAYLISTS;
+            new FetchPlaylistsTask().execute( sense );
             break;
         }
     }
@@ -723,5 +722,59 @@ public class LockerList extends ListActivity
             handleListSwitch(0, R.drawable.song_icon, 1, R.drawable.right_play);
         }
     }
+    
+    private class FetchPlaylistsTask extends UserTask<Integer, Void, Boolean>
+    {
+        int sense = -1;
+        boolean fetching_tracks = false;
+        @Override
+        public void onPreExecute()
+        {
+            
+        }
+
+        @Override
+        public Boolean doInBackground( Integer... params )
+        {
+            sense = params[0];
+            int playlist_id = -1;
+            if(params.length > 1) {
+                playlist_id = params[1];
+                fetching_tracks = true;
+            }
+            try
+            {
+                if(playlist_id > -1)
+                    mCursor = mDb.getTracksForPlaylist( playlist_id );
+                else
+                    mCursor = mDb.getTableList( Music.Meta.PLAYLIST );
+            }
+            catch ( Exception e )
+            {
+                return false;
+            }
+            return true;
+        }
+
+        @Override
+        public void onPostExecute( Boolean result )
+        {
+            // TODO error handling
+            if ( sense == TRANSLATION_LEFT )
+            {
+                getListView().startAnimation( mRTLanim );
+            }
+            else if ( sense == TRANSLATION_RIGHT )
+            {
+                getListView().startAnimation( mLTRanim );
+            }
+            mPositionMenu = STATE.PLAYLISTS;
+            if(fetching_tracks)
+                handleListSwitch(0, R.drawable.song_icon, 1, R.drawable.right_play);
+            else
+                handleListSwitch(0, R.drawable.playlist_icon, 1, R.drawable.right_play);
+        }
+    }
 
 }
+
