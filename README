@@ -12,8 +12,8 @@ Complete source code and issue tracking is available there.
     * Log into an existing MP3tunes locker account
     * Browse your music locker by artist / album / track / playlist
     * Intelligent on demand caching of locker data, with auto update.
-    * Stream music over 3G and WiFi connections, using approriate bitrate settings.
-    * Music fades out when a call is recieved, and fades back in when it is over.
+    * Stream music over 3G and WiFi connections, using appropriate bitrate settings.
+    * Music fades out when a call is received, and fades back in when it is over.
     - Create playlists on the go.
     - View album art for the currently playing track, with optional caching.
     - Search locker for artists / albums / tracks
