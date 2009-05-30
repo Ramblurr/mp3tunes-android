@@ -28,9 +28,7 @@ import java.util.Timer;
 import java.util.TimerTask;
 
 import com.binaryelysium.mp3tunes.api.Track;
-import com.db4o.internal.cs.messages.MCreateClass;
 import com.mp3tunes.android.LockerDb;
-import com.mp3tunes.android.MP3tunesApplication;
 import com.mp3tunes.android.Music;
 import com.mp3tunes.android.R;
 import com.mp3tunes.android.activity.Player;
@@ -40,7 +38,6 @@ import android.app.Notification;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
-import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
@@ -49,6 +46,7 @@ import android.media.MediaPlayer.OnBufferingUpdateListener;
 import android.media.MediaPlayer.OnCompletionListener;
 import android.media.MediaPlayer.OnErrorListener;
 import android.media.MediaPlayer.OnPreparedListener;
+import android.net.ConnectivityManager;
 import android.net.wifi.WifiManager;
 import android.net.wifi.WifiManager.WifiLock;
 import android.os.Handler;
@@ -57,6 +55,7 @@ import android.os.Message;
 import android.os.PowerManager;
 import android.os.RemoteException;
 import android.os.PowerManager.WakeLock;
+import android.preference.PreferenceManager;
 import android.telephony.PhoneStateListener;
 import android.telephony.TelephonyManager;
 import android.util.Log;
@@ -98,11 +97,10 @@ public class Mp3tunesService extends Service
     {
 
         private final static int STOPPED = 0;
-        private final static int TUNING = 1;
-        private final static int PREPARING = 2;
-        private final static int PLAYING = 3;
-        private final static int SKIPPING = 4;
-        private final static int PAUSED = 5;
+        private final static int PREPARING = 1;
+        private final static int PLAYING = 2;
+        private final static int SKIPPING = 3;
+        private final static int PAUSED = 4;
     }
     
     public static final String META_CHANGED = "com.mp3tunes.android.metachanged";
@@ -403,9 +401,12 @@ public class Mp3tunesService extends Service
                 mCurrentPosition = playlist_index;
                 mAlbumArt = null;
             }
-            Log.i("MP3tunes", "Streaming: " + track.getPlayUrl());
+            
+            int bitrate = chooseBitrate();
+            String url = track.getPlayUrl() + "&bitrate=" + bitrate;
+            Log.i( "MP3tunes", "Streaming: " + url );
             p.reset();
-            p.setDataSource( track.getPlayUrl());
+            p.setDataSource( url );
             p.setOnCompletionListener( mOnCompletionListener );
             p.setOnBufferingUpdateListener( mOnBufferingUpdateListener );
             p.setOnPreparedListener( mOnPreparedListener );
@@ -430,6 +431,40 @@ public class Mp3tunesService extends Service
         {
             Log.e( getString( R.string.app_name ), e.getMessage() );
         }
+    }
+    
+    private int chooseBitrate()
+    {
+        int bitrate = PreferenceManager.getDefaultSharedPreferences(this).getInt( "bitrate", -1 );
+        
+        if( bitrate == -1 )
+        {
+            int[] vals = getResources().getIntArray( R.array.rate_values );
+            
+            ConnectivityManager cm = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE); 
+            int type = cm.getActiveNetworkInfo().getType();
+            if(type == ConnectivityManager.TYPE_WIFI)
+            {
+                bitrate = vals[5]; // 5 = 192000 // TODO this shouldn't be harcoded
+            } 
+            else if(type == ConnectivityManager.TYPE_MOBILE) 
+            {
+                TelephonyManager tm = (TelephonyManager) getSystemService(Context.TELEPHONY_SERVICE);
+
+                switch (tm.getNetworkType())
+                {
+                    case TelephonyManager.NETWORK_TYPE_UNKNOWN:
+                    case TelephonyManager.NETWORK_TYPE_GPRS:
+                        bitrate = vals[3];
+                        break;
+                    case TelephonyManager.NETWORK_TYPE_EDGE:
+                    case TelephonyManager.NETWORK_TYPE_UMTS:
+                        bitrate = vals[4];
+                        break;
+                } 
+            }
+        }
+        return bitrate;
     }
     
     private void nextTrack()
@@ -643,13 +678,6 @@ public class Mp3tunesService extends Service
         public int getShuffleMode() throws RemoteException
         {
             return mShuffleMode;
-        }
-
-        public String getTrackName() throws RemoteException
-        {
-            if( mServiceState != STATE.PLAYING && mServiceState  != STATE.PAUSED )
-                throw new RemoteException();
-            return mCurrentTrack.getTitle();
         }
 
         public boolean isPlaying() throws RemoteException
