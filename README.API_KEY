@@ -1,7 +1,7 @@
 In order to build this source, you will need to obtain a partner token from
 http://www.mp3tunes.com/api/
 
-Once you have a key, create a new file in src/com/mp3tunes/android called PrivateAPPIKey containing
+Once you have a key, create a new file in src/com/mp3tunes/android called PrivateAPIKey containing
 the following:
 
 package com.mp3tunes.android;
