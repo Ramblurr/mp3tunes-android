@@ -79,10 +79,7 @@ public class LockerCache
     public boolean isCacheValid( int type )
     {
         long now = System.currentTimeMillis();
-        System.out.println(" mArtistsLastUpdate: " + mArtistsLastUpdate);
-        System.out.println(" Now: " + now);
         long then = mArtistsLastUpdate + mCacheLifetime;
-        System.out.println(" mArtistsLastUpdate + mCacheLifetime: " + then);
         
         switch ( type )
         {
