@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array
+        name="rate">
+        <item>Automatic</item>
+        <item>24000</item>
+        <item>56000</item>
+        <item>96000</item>
+        <item>128000</item>
+        <item>192000</item>
+    </string-array>
+    <integer-array
+        name="rate_values">
+        <item>-1</item>
+        <item>24000</item>
+        <item>56000</item>
+        <item>96000</item>
+        <item>128000</item>
+        <item>192000</item>
+    </integer-array>
+</resources>

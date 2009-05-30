@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen
+    xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <PreferenceCategory
+        android:title="Scrobbler"
+        android:summary="Penguin down now!">
+
+        <CheckBoxPreference
+            android:key="cacheart"
+            android:defaultValue="true"
+            android:title="Cache Cover Art"
+            android:summary="Save cover art onthe SD Card (saves bandwidth, and loads faster)." />
+
+        <CheckBoxPreference
+            android:key="browseinitial"
+            android:defaultValue="false"
+            android:title="Browse Artists by Initial"
+            android:summary="Useful if you have lots of artists." />
+        <ListPreference
+            android:key="bitrate"
+            android:title="Streaming Rate"
+            android:summary="Click to choose your streaming rate"
+            android:entries="@array/rate"
+            android:entryValues="@array/rate_values"
+            android:dialogTitle="Choose a Streaming Rate" />
+    </PreferenceCategory>
+</PreferenceScreen>
