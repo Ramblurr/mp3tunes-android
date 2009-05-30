@@ -97,7 +97,7 @@ public class LockerDb
      * @throws IOException
      * @throws SQLiteException
      */
-    public void insert( Track track ) throws IOException, SQLiteException
+    public void insertTrack( Track track ) throws IOException, SQLiteException
     {
 
         if ( track == null )
@@ -184,30 +184,139 @@ public class LockerDb
             throw e;
         }
     }
+    
+    /**
+     * 
+     * @param artist
+     * @throws IOException
+     * @throws SQLiteException
+     */
+    public void insertArtist( Artist artist) throws IOException, SQLiteException
+    {
+        if ( artist == null )
+        {
+            System.out.println( "OMG Artist NULL" );
+            return;
+        }
+        try
+        {
+            if ( artist.getName().length() > 0 )
+            {
+                ContentValues cv = new ContentValues( 2 );
+                cv.put( "_id", artist.getId() );
+                cv.put( "artist_name", artist.getName() );
+                cv.put( "album_count", artist.getAlbumCount() );
+                cv.put( "track_count", artist.getTrackCount() );
+
+                Cursor c = mDb.query( "artist", new String[] { "_id" }, "_id='"
+                        + artist.getId() + "'", null, null, null, null );
+                if ( !c.moveToNext() ) // artist doesn't exist
+                    mDb.insert( "artist", "Unknown", cv );
+                else // artist exists, so lets update with new data
+                {
+                    cv.remove( "_id" );
+                    mDb.update( "artist", cv, "_id='" + artist.getId() + "'", null );
+                }
+                c.close();
+            }
+        }
+        catch ( SQLiteException e )
+        {
+            throw e;
+        }
+    }
+    
+    public void insertAlbum( Album album) throws IOException, SQLiteException
+    {
+        if ( album == null )
+        {
+            System.out.println( "OMG Artist NULL" );
+            return;
+        }
+        try
+        {
+            if ( album.getName().length() > 0 )
+            {
+                ContentValues cv = new ContentValues( 2 );
+                cv.put( "_id", album.getId() );
+                cv.put( "album_name", album.getName() );
+                cv.put( "artist_name", album.getArtistName() );
+                cv.put( "artist_id", album.getArtistId() );
+                cv.put( "year", album.getYear() );
+                cv.put( "track_count", album.getTrackCount() );
+
+                Cursor c = mDb.query( "album", new String[] { "_id" }, "_id='"
+                        + album.getId() + "'", null, null, null, null );
+
+                if ( !c.moveToNext() ) // album doesn't exist
+                    mDb.insert( "album", "Unknown", cv );
+                else // album exists, so lets update with new data
+                {
+                    cv.remove( "_id" );
+                    mDb.update( "album", cv, "_id='" + album.getId() + "'", null );
+                }
+
+                c.close();
+            }
+        }
+        catch ( SQLiteException e )
+        {
+            throw e;
+        }
+    }
 
     public Cursor getTableList( Music.Meta type )
     {
-
-        if ( mCache.isCacheValid( LockerCache.ARTIST ) )
+        try
         {
-            System.out.println( "Cache valid" );
             switch ( type )
             {
             case TRACK:
-                return mDb.query( "track", new String[] { "title", "_id", "track" }, null, null,
-                        null, null, "title" );
+                if ( !mCache.isCacheValid( LockerCache.TRACK ) )
+                    refreshTracks();
+                return queryTracks();
             case ALBUM:
-                return mDb.query( "album", new String[] { "album_name", "_id", "track_count" },
-                        null, null, null, null, "album_name" );
+                if ( !mCache.isCacheValid( LockerCache.ALBUM ) )
+                    refreshAlbums();
+                return queryAlbums();
             case ARTIST:
-                return mDb.query( "artist", new String[] { "artist_name", "_id" }, null, null,
-                        null, null, "artist_name" );
+                if ( !mCache.isCacheValid( LockerCache.ARTIST ) )
+                    refreshArtists();
+                return queryArtists();
             default:
                 return null;
             }
         }
-        System.out.println( "Cache invalid" );
+        catch ( SQLiteException e )
+        {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+        catch ( IOException e )
+        {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+        
         return null;
+    }
+    
+    private Cursor queryArtists()
+    {
+        return mDb.query( "artist", new String[] { "artist_name", "_id" }, null, null,
+                null, null, "artist_name" );   
+    }
+    
+    private Cursor queryAlbums()
+    {
+        return mDb.query( "album", new String[] { "album_name", "_id", "track_count" },
+                null, null, null, null, "album_name" );
+    }
+    
+    private Cursor queryTracks()
+    {
+        return mDb.query( "track", new String[] { "title", "_id", "track" }, null, null,
+                null, null, "title" );
     }
 
     /**
@@ -391,18 +500,43 @@ public class LockerDb
         mDb.execSQL("DELETE FROM current_playlist");
     }
     
-    public void refreshCache() throws SQLiteException, IOException
+    public void refreshTracks() throws SQLiteException, IOException
     {
-        clearDB();
         ArrayList<Track> tracks = new ArrayList<Track>( mLocker.getTracks() );
         int lim = tracks.size();
         System.out.println( "beginning insertion of " + lim + " tracks" );
         for ( int i = 0; i < lim; i++ )
         {
-            insert( tracks.get( i ) );
+            insertTrack( tracks.get( i ) );
+        }
+        System.out.println( "insertion complete" );
+        mCache.setUpdate( System.currentTimeMillis(), LockerCache.TRACK );
+    }
+    
+    private void refreshArtists()  throws SQLiteException, IOException
+    {
+        ArrayList<Artist> artists = new ArrayList<Artist>( mLocker.getArtists() );
+        int lim = artists.size();
+        System.out.println( "beginning insertion of " + lim + " artists" );
+        for ( int i = 0; i < lim; i++ )
+        {
+            insertArtist( artists.get( i ) );
         }
         System.out.println( "insertion complete" );
         mCache.setUpdate( System.currentTimeMillis(), LockerCache.ARTIST );
+    }
+    
+    private void refreshAlbums()  throws SQLiteException, IOException
+    {
+        ArrayList<Album> albums = new ArrayList<Album>( mLocker.getAlbums() );
+        int lim = albums.size();
+        System.out.println( "beginning insertion of " + lim + " albums" );
+        for ( int i = 0; i < lim; i++ )
+        {
+            insertAlbum( albums.get( i ) );
+        }
+        System.out.println( "insertion complete" );
+        mCache.setUpdate( System.currentTimeMillis(), LockerCache.ALBUM );
     }
 
     /**
