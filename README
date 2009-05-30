@@ -1,0 +1,33 @@
+Offical MP3tunes Android Application
+------------------------------------
+
+The project home is at http://github.com/Ramblurr/mp3tunes-android 
+
+Complete source code and issue tracking is available there.
+
+
+-=FEATURES=-
+ Version 1.0
+ (* = complete, - = not yet complete)
+    * Log into an existing MP3tunes locker account
+    * Browse your music locker by artist / album / track / playlist
+    * Intelligent on demand caching of locker data, with auto update.
+    * Stream music over 3G and WiFi connections, using approriate bitrate settings.
+    * Music fades out when a call is recieved, and fades back in when it is over.
+    - Create playlists on the go.
+    - View album art for the currently playing track, with optional caching.
+    - Search locker for artists / albums / tracks
+    - Scrobble to the last.fm (if the last.fm app is installed)
+
+-=DEPENDENCIES=-
+ This app depends on libmp3tunes-java which is available from http://github.com/Ramblurr/libmp3tunes-java/
+
+-=BUILDING=-
+    write this
+
+-=INSTALLING=-
+
+ You can either follow the Build instructions above, or download a pre-built android package when 
+ they are available (watch this file for updates). 
+
+ When the feature list is complete for 1.0 it will be available in the market.
