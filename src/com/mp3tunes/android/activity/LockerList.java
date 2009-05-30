@@ -168,7 +168,7 @@ public class LockerList extends ListActivity
 
         // Refresh the locker asyncronously
         // TODO this takes an extremely long time on large lockers
-        new RefreshCacheTask().execute();
+//        new RefreshCacheTask().execute();
 
         mHistory = new Stack<HistoryUnit>();
 
@@ -326,6 +326,7 @@ public class LockerList extends ListActivity
         if ( mPositionMenu == STATE.MAIN )
         {
             mPositionRow = pos;
+            (( ListAdapter ) getListAdapter()).enableLoadBar( pos );
             showSubMenu( TRANSLATION_LEFT );
         }
         else
@@ -401,37 +402,30 @@ public class LockerList extends ListActivity
 
     private void showSubMenu( int sense )
     {
-        if ( sense == TRANSLATION_LEFT )
-        {
-            getListView().startAnimation( mRTLanim );
-        }
-        else if ( sense == TRANSLATION_RIGHT )
-        {
-            getListView().startAnimation( mLTRanim );
-        }
+//        if ( sense == TRANSLATION_LEFT )
+//        {
+//            getListView().startAnimation( mRTLanim );
+//        }
+//        else if ( sense == TRANSLATION_RIGHT )
+//        {
+//            getListView().startAnimation( mLTRanim );
+//        }
 
         // which manu menu option has been selected
         int icon_id = -1;
         switch ( mMainOpts[mPositionRow] )
         {
         case R.string.artists:
-            mCursor = mDb.getTableList( Music.Meta.ARTIST );
-            mPositionMenu = STATE.ARTIST;
-            icon_id = R.drawable.artist_icon;
-            break;
+            new FetchArtistsTask().execute( sense );
+            return; 
 
         case R.string.albums:
-            mCursor = mDb.getTableList( Music.Meta.ALBUM );
-            System.out.println( "Got albums: " + mCursor.getCount() );
-            mPositionMenu = STATE.ALBUM;
-            icon_id = R.drawable.album_icon;
-            break;
+            new FetchAlbumsTask().execute( sense );
+            return;
 
         case R.string.tracks:
-            mCursor = mDb.getTableList( Music.Meta.TRACK );
-            mPositionMenu = STATE.TRACK;
-            icon_id = R.drawable.song_icon;
-            break;
+            new FetchTracksTask().execute( sense );
+            return;
 
         case R.string.search:
             mPositionMenu = STATE.SEARCH;
@@ -442,6 +436,12 @@ public class LockerList extends ListActivity
             break;
         }
 
+        handleListSwitch(icon_id);
+    }
+    
+    private void handleListSwitch(int icon_id)
+    {
+        ((ListAdapter) getListAdapter()).disableLoadBar();
         // if the cursor is empty, we adjust the text in function of the submenu
         if ( mCursor == null )
         {
@@ -554,7 +554,7 @@ public class LockerList extends ListActivity
         {
             try
             {
-                mDb.refreshCache();
+//                mDb.refreshTrCache();
             }
             catch ( Exception e )
             {
@@ -577,6 +577,129 @@ public class LockerList extends ListActivity
                         getString( R.string.ERROR_SERVER_UNAVAILABLE ) );
                 logout();
             }
+        }
+    }
+    
+    private class FetchArtistsTask extends UserTask<Integer, Void, Boolean>
+    {
+        int sense = -1;
+        @Override
+        public void onPreExecute()
+        {
+            
+        }
+
+        @Override
+        public Boolean doInBackground( Integer... params )
+        {
+            sense = params[0];
+            try
+            {
+                mCursor = mDb.getTableList( Music.Meta.ARTIST );
+            }
+            catch ( Exception e )
+            {
+                return false;
+            }
+            return true;
+        }
+
+        @Override
+        public void onPostExecute( Boolean result )
+        {
+            // TODO error handling
+            if ( sense == TRANSLATION_LEFT )
+            {
+                getListView().startAnimation( mRTLanim );
+            }
+            else if ( sense == TRANSLATION_RIGHT )
+            {
+                getListView().startAnimation( mLTRanim );
+            }
+            mPositionMenu = STATE.ARTIST;
+            handleListSwitch(R.drawable.artist_icon);
+        }
+    }
+    
+    private class FetchAlbumsTask extends UserTask<Integer, Void, Boolean>
+    {
+        int sense = -1;
+        @Override
+        public void onPreExecute()
+        {
+            
+        }
+
+        @Override
+        public Boolean doInBackground( Integer... params )
+        {
+            sense = params[0];
+            try
+            {
+                mCursor = mDb.getTableList( Music.Meta.ALBUM );
+            }
+            catch ( Exception e )
+            {
+                return false;
+            }
+            return true;
+        }
+
+        @Override
+        public void onPostExecute( Boolean result )
+        {
+            // TODO error handling
+            if ( sense == TRANSLATION_LEFT )
+            {
+                getListView().startAnimation( mRTLanim );
+            }
+            else if ( sense == TRANSLATION_RIGHT )
+            {
+                getListView().startAnimation( mLTRanim );
+            }
+            mPositionMenu = STATE.ALBUM;
+            handleListSwitch(R.drawable.album_icon);
+        }
+    }
+    
+    private class FetchTracksTask extends UserTask<Integer, Void, Boolean>
+    {
+        int sense = -1;
+        @Override
+        public void onPreExecute()
+        {
+            
+        }
+
+        @Override
+        public Boolean doInBackground( Integer... params )
+        {
+            sense = params[0];
+            try
+            {
+                mCursor = mDb.getTableList( Music.Meta.TRACK );
+            }
+            catch ( Exception e )
+            {
+                return false;
+            }
+            return true;
+        }
+
+        @Override
+        public void onPostExecute( Boolean result )
+        {
+            // TODO error handling
+            if ( sense == TRANSLATION_LEFT )
+            {
+                getListView().startAnimation( mRTLanim );
+            }
+            else if ( sense == TRANSLATION_RIGHT )
+            {
+                getListView().startAnimation( mLTRanim );
+            }
+            mPositionMenu = STATE.TRACK;
+            handleListSwitch(R.drawable.song_icon);
         }
     }
 
