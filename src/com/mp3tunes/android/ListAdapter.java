@@ -234,12 +234,13 @@ public class ListAdapter extends BaseAdapter implements Serializable, ImageDownl
                 if( list == null )
                         return;
                 ArrayList<String> urls = new ArrayList<String>();
-                Iterator<ListEntry> it = list.iterator ();
-                while (it.hasNext ()) {
-                        ListEntry entry = it.next();
-                        if(entry.url != null){
-                                urls.add(entry.url);
-                        }
+                int lim = mList.size();
+                for( int i=0; i < lim; i++ )
+                {
+                    ListEntry entry = mList.get( i );
+                    if(entry.url != null){
+                            urls.add(entry.url);
+                    }
                 }
 
 
