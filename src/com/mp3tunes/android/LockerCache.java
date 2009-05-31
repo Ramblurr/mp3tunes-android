@@ -26,11 +26,15 @@ public class LockerCache
     long mTracksLastUpdate = -1; 
     long mPlaylistLastUpdate = -1; // time of the last playlist update
     long mPrefsLastUpdate = -1; // time of the last preferences update
-    long mCacheLifetime; // the length of time the cache should last before
-    // being considered expired
-    boolean mAutoFetch = false; // should the db auto update content with the
-                                // cache
-    // expires
+    long mArtistsTokensLastUpdate = -1; // time of the last locker update
+    long mAlbumsTokensLastUpdate = -1; 
+    long mTracksTokensLastUpdate = -1;
+    
+    
+    // the length of time the cache should last before being 
+    // considered expired expires
+    long mCacheLifetime; 
+    
 
     /* LOCKER CACHE TYPES */
     static final int ARTIST = 0;
@@ -38,16 +42,18 @@ public class LockerCache
     static final int TRACK = 2;
     static final int PLAYLIST = 3;
     static final int PREFS = 4;
+    static final int ARTIST_TOKENS = 5;
+    static final int ALBUM_TOKENS = 6;
+    static final int TRACK_TOKENS = 7;
     
 
-    public LockerCache( long lastUpdate, long lifetime, boolean autoFetch )
+    public LockerCache( long lastUpdate, long lifetime  )
     {
 
-        this( lastUpdate, lastUpdate, lastUpdate, lastUpdate, lastUpdate, lifetime, autoFetch );
+        this( lastUpdate, lastUpdate, lastUpdate, lastUpdate, lastUpdate, lifetime  );
     }
 
-    public LockerCache( long artistUpdate, long albumUpdate, long trackUpdate, long playlistUpdate, long prefUpdate, long lifetime,
-            boolean autoFetch )
+    public LockerCache( long artistUpdate, long albumUpdate, long trackUpdate, long playlistUpdate, long prefUpdate, long lifetime )
     {
 
         mArtistsLastUpdate = artistUpdate;
@@ -56,17 +62,9 @@ public class LockerCache
         mPlaylistLastUpdate = playlistUpdate;
         mPrefsLastUpdate = prefUpdate;
         mCacheLifetime = lifetime;
-        mAutoFetch = autoFetch;
-    }
-
-    /**
-     * Convenience method that determines if the entire locker (data, playlists,
-     * and preferences) are valid.
-     */
-    public boolean isCacheValid()
-    {
-
-        return isCacheValid( ARTIST )&& isCacheValid( ALBUM ) && isCacheValid( TRACK ) && isCacheValid( PLAYLIST ) && isCacheValid( PREFS );
+        mArtistsTokensLastUpdate =  artistUpdate;
+        mAlbumsTokensLastUpdate =  albumUpdate;
+        mTracksTokensLastUpdate =  trackUpdate;
     }
 
     /**
@@ -89,6 +87,12 @@ public class LockerCache
             return mAlbumsLastUpdate > 0 && ( ( mAlbumsLastUpdate + mCacheLifetime ) > now );
         case TRACK:
             return mTracksLastUpdate > 0 && ( ( mTracksLastUpdate + mCacheLifetime ) > now );
+        case ARTIST_TOKENS:
+            return mArtistsTokensLastUpdate > 0 && ( ( mArtistsTokensLastUpdate + mCacheLifetime ) > now );
+        case ALBUM_TOKENS:
+            return mAlbumsTokensLastUpdate > 0 && ( ( mAlbumsTokensLastUpdate + mCacheLifetime ) > now );
+        case TRACK_TOKENS:
+            return mTracksTokensLastUpdate > 0 && ( ( mTracksTokensLastUpdate + mCacheLifetime ) > now );
         case PLAYLIST:
             return mPlaylistLastUpdate > 0 && ( ( mPlaylistLastUpdate + mCacheLifetime ) > now );
         case PREFS:
@@ -110,6 +114,15 @@ public class LockerCache
             break;
         case TRACK:
             mTracksLastUpdate = timestamp;
+            break;
+        case ARTIST_TOKENS:
+            mArtistsTokensLastUpdate = timestamp;
+            break;
+        case ALBUM_TOKENS:
+            mAlbumsTokensLastUpdate = timestamp;
+            break;
+        case TRACK_TOKENS:
+            mTracksTokensLastUpdate = timestamp;
             break;
         case PLAYLIST:
             mPlaylistLastUpdate = timestamp;

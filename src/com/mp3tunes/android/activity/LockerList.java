@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.Stack;
 
 import com.binaryelysium.mp3tunes.api.Locker;
+import com.binaryelysium.mp3tunes.api.Token;
 import com.mp3tunes.android.AlphabetIndexer;
 import com.mp3tunes.android.ListAdapter;
 import com.mp3tunes.android.ListEntry;
@@ -429,7 +430,7 @@ public class LockerList extends ListActivity
         }
     }
     
-    private void handleListSwitch(int id_field, int icon_id, int text_id, int disclosure_id)
+    private void handleListSwitch( int id_field, int icon_id, int text_id, int disclosure_id, String[] tokens )
     {
         ((ListAdapter) getListAdapter()).disableLoadBar();
         // if the cursor is empty, we adjust the text in function of the submenu
@@ -457,7 +458,7 @@ public class LockerList extends ListActivity
             }
         }
 
-        setListAdapter( adapterFromCursor( id_field, icon_id, text_id, disclosure_id ) );
+        setListAdapter( adapterFromCursor( id_field, icon_id, text_id, disclosure_id, tokens ) );
     }
 
     /**
@@ -473,9 +474,11 @@ public class LockerList extends ListActivity
      *            ListEntry
      * @param disclosure_id
      *            the resource id that contains the id of the disclosure icon
+     * @param tokens
+     *            an array of tokens to be used in the indexer
      * @return
      */
-    private ListAdapter adapterFromCursor( int id_field, int icon_id, int text_id, int disclosure_id )
+    private ListAdapter adapterFromCursor( int id_field, int icon_id, int text_id, int disclosure_id, String[] tokens )
     {
         ArrayList<ListEntry> iconifiedEntries = new ArrayList<ListEntry>();
         while ( mCursor.moveToNext() )
@@ -486,7 +489,12 @@ public class LockerList extends ListActivity
 
         }
         ListAdapter adapter = new ListAdapter( LockerList.this );
-        AlphabetIndexer indexer = new AlphabetIndexer(mCursor, text_id, mAlphabet);
+        if( tokens == null) {
+            System.out.println("Using alphabet!");
+            tokens = mAlphabet;
+        }
+        System.out.println("final tokens " + tokens.length);
+        AlphabetIndexer indexer = new AlphabetIndexer(mCursor, text_id, tokens);
         adapter.setIndexer( indexer );
         adapter.setSourceIconified( iconifiedEntries );
         return adapter;
@@ -583,6 +591,7 @@ public class LockerList extends ListActivity
     private class FetchArtistsTask extends UserTask<Integer, Void, Boolean>
     {
         int sense = -1;
+        String[] tokens= null;
         @Override
         public void onPreExecute()
         {
@@ -596,6 +605,8 @@ public class LockerList extends ListActivity
             try
             {
                 mCursor = mDb.getTableList( Music.Meta.ARTIST );
+                Token[] t = mDb.getTokens( Music.Meta.ARTIST );
+                tokens = LockerDb.tokensToString( t );
             }
             catch ( Exception e )
             {
@@ -617,7 +628,7 @@ public class LockerList extends ListActivity
                 getListView().startAnimation( mLTRanim );
             }
             mPositionMenu = STATE.ARTIST;
-            handleListSwitch(0, R.drawable.artist_icon, 1, R.drawable.arrow);
+            handleListSwitch( 0, R.drawable.artist_icon, 1, R.drawable.arrow, tokens );
         }
     }
     
@@ -632,6 +643,7 @@ public class LockerList extends ListActivity
     private class FetchAlbumsTask extends UserTask<Integer, Void, Boolean>
     {
         int sense = -1;
+        String[] tokens= null;
         @Override
         public void onPreExecute()
         {
@@ -651,6 +663,9 @@ public class LockerList extends ListActivity
                     mCursor = mDb.getAlbumsForArtist( artist_id );
                 else
                     mCursor = mDb.getTableList( Music.Meta.ALBUM );
+                
+                Token[] t = mDb.getTokens( Music.Meta.ALBUM );
+                tokens = LockerDb.tokensToString( t );
             }
             catch ( Exception e )
             {
@@ -672,13 +687,14 @@ public class LockerList extends ListActivity
                 getListView().startAnimation( mLTRanim );
             }
             mPositionMenu = STATE.ALBUM;
-            handleListSwitch(0, R.drawable.album_icon, 1, R.drawable.arrow);
+            handleListSwitch( 0, R.drawable.album_icon, 1, R.drawable.arrow, tokens );
         }
     }
     
     private class FetchTracksTask extends UserTask<Integer, Void, Boolean>
     {
         int sense = -1;
+        String[] tokens= null;
         @Override
         public void onPreExecute()
         {
@@ -698,6 +714,9 @@ public class LockerList extends ListActivity
                     mCursor = mDb.getTracksForAlbum( album_id );
                 else
                     mCursor = mDb.getTableList( Music.Meta.TRACK );
+                
+                Token[] t = mDb.getTokens( Music.Meta.TRACK );
+                tokens = LockerDb.tokensToString( t );
             }
             catch ( Exception e )
             {
@@ -719,7 +738,7 @@ public class LockerList extends ListActivity
                 getListView().startAnimation( mLTRanim );
             }
             mPositionMenu = STATE.TRACK;
-            handleListSwitch(0, R.drawable.song_icon, 1, R.drawable.right_play);
+            handleListSwitch( 0, R.drawable.song_icon, 1, R.drawable.right_play, tokens );
         }
     }
     
@@ -770,9 +789,9 @@ public class LockerList extends ListActivity
             }
             mPositionMenu = STATE.PLAYLISTS;
             if(fetching_tracks)
-                handleListSwitch(0, R.drawable.song_icon, 1, R.drawable.right_play);
+                handleListSwitch( 0, R.drawable.song_icon, 1, R.drawable.right_play, null );
             else
-                handleListSwitch(0, R.drawable.playlist_icon, 1, R.drawable.right_play);
+                handleListSwitch( 0, R.drawable.playlist_icon, 1, R.drawable.right_play, null );
         }
     }
 

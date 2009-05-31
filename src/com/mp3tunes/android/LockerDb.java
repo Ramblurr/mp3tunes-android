@@ -21,14 +21,10 @@
 package com.mp3tunes.android;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
 
 import android.content.ContentValues;
 import android.content.Context;
-import android.content.SharedPreferences;
 import android.database.Cursor;
-import android.database.DatabaseUtils;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteDiskIOException;
 import android.database.sqlite.SQLiteException;
@@ -39,8 +35,8 @@ import android.util.Log;
 import com.binaryelysium.mp3tunes.api.Album;
 import com.binaryelysium.mp3tunes.api.Artist;
 import com.binaryelysium.mp3tunes.api.Locker;
-import com.binaryelysium.mp3tunes.api.LockerException;
 import com.binaryelysium.mp3tunes.api.Playlist;
+import com.binaryelysium.mp3tunes.api.Token;
 import com.binaryelysium.mp3tunes.api.Track;
 import com.binaryelysium.mp3tunes.api.results.DataResult;
 import com.mp3tunes.android.LockerCache;
@@ -61,7 +57,7 @@ public class LockerDb
     private SQLiteDatabase mDb;
 
     private static final String DB_NAME = "locker.dat";
-    private static final int DB_VERSION = 1;
+    private static final int DB_VERSION = 6;
 
     public LockerDb( Context context, Locker locker )
     {
@@ -75,7 +71,7 @@ public class LockerDb
         mLocker = locker;
         mContext = context;
         long lastupdate = MP3tunesApplication.getInstance().getLastUpdate();
-        mCache = new LockerCache( lastupdate, 8640000, false ); // TODO handle
+        mCache = new LockerCache( lastupdate, 8640000 ); // TODO handle
         // cache timeout
         // properly
     }
@@ -91,7 +87,10 @@ public class LockerDb
         mDb.delete( "track", null, null );
         mDb.delete( "album", null, null );
         mDb.delete( "artist", null, null );
-        // mDb.execSQL("DELETE FROM current_playlist");
+        mDb.delete( "playlist", null, null );
+        mDb.delete( "playlist_tracks", null, null );
+        mDb.delete( "token", null, null );
+        mDb.delete( "current_playlist", null, null );
     }
 
     /**
@@ -290,6 +289,41 @@ public class LockerDb
             throw e;
         }
     }
+    
+    public void insertToken( Token token, String type ) throws IOException, SQLiteException
+    {
+        if ( token == null )
+        {
+            System.out.println( "OMG Token NULL" );
+            return;
+        }
+        try
+        {
+            if ( token.getToken().length() > 0 )
+            {
+                ContentValues cv = new ContentValues( 2 );
+                cv.put( "type", type );
+                cv.put( "token", token.getToken() );
+                cv.put( "count", token.getCount() );
+
+                Cursor c = mDb.query( "token", new String[] { "token" }, "type='"
+                        + type + "' AND token='"+token.getToken()+"'", null, null, null, null );
+
+                if ( !c.moveToNext() ) // album doesn't exist
+                    mDb.insert( "token", "Unknown", cv );
+                else // album exists, so lets update with new data
+                {
+                    mDb.update( "token", cv, "type='" + type + "' AND token='"+token.getToken()+"'", null );
+                }
+
+                c.close();
+            }
+        }
+        catch ( SQLiteException e )
+        {
+            throw e;
+        }
+    }
 
     public Cursor getTableList( Music.Meta type )
     {
@@ -329,6 +363,58 @@ public class LockerDb
         }
         
         return null;
+    }
+    
+    public Token[] getTokens( Music.Meta type )
+    {
+        try
+        {
+            Cursor c;
+            switch ( type )
+            {
+            case TRACK:
+                if ( !mCache.isCacheValid( LockerCache.TRACK_TOKENS ) )
+                    refreshTokens( type );
+                c = queryTokens("track");
+                break;
+            case ALBUM:
+                if ( !mCache.isCacheValid( LockerCache.ALBUM_TOKENS ) )
+                    refreshTokens( type );
+                c = queryTokens("album");
+                break;
+            case ARTIST:
+                if ( !mCache.isCacheValid( LockerCache.ARTIST_TOKENS ) )
+                    refreshTokens( type );
+                c = queryTokens("artist");
+                break;
+            default:
+                return null;
+            }
+            Token[] t = new Token[c.getCount()];
+            while( c.moveToNext() )
+            {
+                t[c.getPosition()] = new Token( c.getString( 1 ), c.getInt( 2 ) );
+            }
+            c.close();
+            return t;
+        }
+        catch ( SQLiteException e )
+        {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+        catch ( IOException e )
+        {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+        
+        return null;
+    }
+    
+    private Cursor queryTokens( String type )
+    {
+        return mDb.query( "token", Music.TOKEN, "type='"+type+"'", null, null, null, Music.TOKEN[1] );   
     }
     
     private Cursor queryPlaylists()
@@ -705,6 +791,50 @@ public class LockerDb
         }
         System.out.println( "insertion complete" );
     }
+    
+    private void refreshTokens(Music.Meta type)  throws SQLiteException, IOException
+    {
+        DataResult<Token> results;
+        String typename;
+        int cachetype;
+        switch( type )
+        {
+            case ARTIST:
+                results = mLocker.getArtistTokens();
+                typename = "artist";
+                cachetype = LockerCache.ARTIST_TOKENS; 
+                break;
+            case ALBUM:
+                results = mLocker.getAlbumTokens();
+                typename = "album";
+                cachetype = LockerCache.ALBUM_TOKENS; 
+                break;
+            case TRACK:
+                results = mLocker.getTrackTokens();
+                typename = "track";
+                cachetype = LockerCache.TRACK_TOKENS; 
+                break;
+            default:
+                    return;
+        }
+        System.out.println( "beginning insertion of " + results.getData().length + " tokens" );
+        for ( Token t : results.getData() )
+        {
+            insertToken( t, typename );
+        }
+        System.out.println( "insertion complete" );
+        mCache.setUpdate( System.currentTimeMillis(), cachetype );
+    }
+    
+    public static String[] tokensToString( Token[] tokens )
+    {
+        String[] list  = new String[tokens.length];
+        for ( int i = 0; i < tokens.length; i++ )
+        {
+            list[i] = tokens[i].getToken();
+        }
+        return list;
+    }
 
     /**
      * Manages connecting, creating, and updating the database
@@ -736,6 +866,7 @@ public class LockerDb
             db.execSQL( "CREATE TABLE playlist(" + "_id INTEGER PRIMARY KEY," + "playlist_name VARCHAR, "
                     + "file_count INTEGER," + "file_name VARCHAR" + ")" );
             db.execSQL( "CREATE TABLE playlist_tracks(" + "playlist_id INTEGER," + "track_id INTEGER" + ")" );
+            db.execSQL( "CREATE TABLE token(" + "type VARCHAR," + "token VARCHAR," + "count INTEGER" + ")" );
             db.execSQL( "CREATE TABLE current_playlist(" + "pos INTEGER PRIMARY KEY,"
                     + "track_id INTEGER" + ")" );
 
@@ -744,12 +875,13 @@ public class LockerDb
         @Override
         public void onUpgrade( SQLiteDatabase db, int oldV, int newV )
         {
-
             db.execSQL( "DROP TABLE IF EXISTS current_playlist" );
             db.execSQL( "DROP TABLE IF EXISTS album" );
             db.execSQL( "DROP TABLE IF EXISTS artist" );
             db.execSQL( "DROP TABLE IF EXISTS track" );
-            db.execSQL( "DROP TABLE IF EXISTS directory" );
+            db.execSQL( "DROP TABLE IF EXISTS playlist" );
+            db.execSQL( "DROP TABLE IF EXISTS playlist_tracks" );
+            db.execSQL( "DROP TABLE IF EXISTS token" );
             onCreate( db );
         }
 

@@ -66,7 +66,6 @@ public class ListAdapter extends BaseAdapter implements Serializable, ImageDownl
         private int mLoadingBar = -1;
         private boolean mScaled = true;
         private boolean mEnabled = true;
-        private String [] mAlphabet;
         private AlphabetIndexer mIndexer;
 
 
@@ -88,7 +87,6 @@ public class ListAdapter extends BaseAdapter implements Serializable, ImageDownl
         public ListAdapter(Activity context) {
                 mContext = context;
                 mIndexer = null;
-                getAlphabet( context.getApplicationContext() );
         }
 
         /**
@@ -129,13 +127,13 @@ public class ListAdapter extends BaseAdapter implements Serializable, ImageDownl
                 mList = new ArrayList<ListEntry>();
         }
         
-         private void getAlphabet(Context context) {
-             String alphabetString = context.getResources().getString(R.string.alphabet);
-             mAlphabet = new String[alphabetString.length()];
-             for (int i = 0; i < mAlphabet.length; i++) {
-                 mAlphabet[i] = String.valueOf(alphabetString.charAt(i));
-             }
-         }
+//         private void getAlphabet(Context context) {
+//             String alphabetString = context.getResources().getString(R.string.alphabet);
+//             mAlphabet = new String[alphabetString.length()];
+//             for (int i = 0; i < mAlphabet.length; i++) {
+//                 mAlphabet[i] = String.valueOf(alphabetString.charAt(i));
+//             }
+//         }
 
         public View getView(int position, View convertView, ViewGroup parent)
         {
@@ -371,7 +369,7 @@ public class ListAdapter extends BaseAdapter implements Serializable, ImageDownl
 
         public Object[] getSections()
         {
-            return mAlphabet;
+            return mIndexer.getSections();
         }
 
 }

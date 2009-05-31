@@ -59,6 +59,11 @@ public class ListEntry{
 	 */
 	int disclosure_id = -1;
 	
+	/**
+	 * Boolean that represents if the data is still being loaded.
+	 */
+	boolean loading;
+	
 	public ListEntry(Object value, int icon_id, String text) {
 		this.value = value;
 		this.icon_id = icon_id;
