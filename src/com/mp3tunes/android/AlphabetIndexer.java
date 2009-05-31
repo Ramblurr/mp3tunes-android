@@ -46,8 +46,6 @@ public class AlphabetIndexer extends DataSetObserver {
      * String is used as the letter to search for.
      */
     public AlphabetIndexer(Cursor cursor, int columnIndex, Object[] sections) {
-        for(Object obj : sections) 
-            System.out.println(obj.toString());
         mDataCursor = cursor;
         mColumnIndex = columnIndex;
         mAlphabetArray = sections;
