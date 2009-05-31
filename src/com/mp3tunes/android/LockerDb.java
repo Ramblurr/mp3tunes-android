@@ -42,6 +42,8 @@ import com.binaryelysium.mp3tunes.api.Locker;
 import com.binaryelysium.mp3tunes.api.LockerException;
 import com.binaryelysium.mp3tunes.api.Playlist;
 import com.binaryelysium.mp3tunes.api.Track;
+import com.binaryelysium.mp3tunes.api.results.DataResult;
+import com.mp3tunes.android.LockerCache;
 
 /**
  * This class is essentially a wrapper for storing MP3tunes locker data in an
@@ -106,8 +108,6 @@ public class LockerDb
             System.out.println( "OMG TRACK NULL" );
             return;
         }
-        int artist = 0, album = 0; // = 0 -> last value, !=0 -> null or select
-        // , album = false, genre = false;
         mDb.execSQL( "BEGIN TRANSACTION" );
         try
         {
@@ -119,15 +119,9 @@ public class LockerDb
 
                 Cursor c = mDb.query( "artist", new String[] { "_id" }, "_id='"
                         + track.getArtistId() + "'", null, null, null, null );
-                if ( c.moveToNext() )
-                    artist = c.getInt( 0 );
-                else
+                if ( !c.moveToNext() )
                     mDb.insert( "artist", "Unknown", cv );
                 c.close();
-            }
-            else
-            {
-                artist = 1;
             }
             /*
              * TODO determine whether the fancy ContentValues means of
@@ -145,16 +139,10 @@ public class LockerDb
                 // Cursor c =
                 // mDb.rawQuery("SELECT _id FROM album WHERE _id='"+track.getAlbumId()+"'"
                 // ,null);
-                if ( c.moveToNext() )
-                    artist = c.getInt( 0 );
-                else
+                if ( !c.moveToNext() )
                     mDb.insert( "album", "Unknown", cv );
                 // mDb.execSQL("INSERT INTO album(_id, album_name) VALUES("+track.getAlbumId()+", '"+track.getAlbumTitle()+"')");
                 c.close();
-            }
-            else
-            {
-                album = 1;
             }
 
             Cursor c = mDb.query( "track", new String[] { "_id" }, "_id='" + track.getId() + "'",
@@ -633,12 +621,11 @@ public class LockerDb
     
     public void refreshTracks() throws SQLiteException, IOException
     {
-        ArrayList<Track> tracks = new ArrayList<Track>( mLocker.getTracks() );
-        int lim = tracks.size();
-        System.out.println( "beginning insertion of " + lim + " tracks" );
-        for ( int i = 0; i < lim; i++ )
+        DataResult<Track> results = mLocker.getTracks();
+        System.out.println( "beginning insertion of " + results.getData().length + " tracks" );
+        for( Track t : results.getData() )
         {
-            insertTrack( tracks.get( i ) );
+            insertTrack( t );
         }
         System.out.println( "insertion complete" );
         mCache.setUpdate( System.currentTimeMillis(), LockerCache.TRACK );
@@ -646,12 +633,11 @@ public class LockerDb
     
     private void refreshPlaylists()  throws SQLiteException, IOException
     {
-        ArrayList<Playlist> playlists = new ArrayList<Playlist>( mLocker.getPlaylists() );
-        int lim = playlists.size();
-        System.out.println( "beginning insertion of " + lim + " playlists" );
-        for ( int i = 0; i < lim; i++ )
+        DataResult<Playlist> results = mLocker.getPlaylists();
+        System.out.println( "beginning insertion of " + results.getData().length + " playlists" );
+        for ( Playlist p : results.getData() )
         {
-            insertPlaylist( playlists.get( i ) );
+            insertPlaylist( p );
         }
         System.out.println( "insertion complete" );
         mCache.setUpdate( System.currentTimeMillis(), LockerCache.PLAYLIST );
@@ -659,12 +645,11 @@ public class LockerDb
     
     private void refreshArtists()  throws SQLiteException, IOException
     {
-        ArrayList<Artist> artists = new ArrayList<Artist>( mLocker.getArtists() );
-        int lim = artists.size();
-        System.out.println( "beginning insertion of " + lim + " artists" );
-        for ( int i = 0; i < lim; i++ )
+        DataResult<Artist> results = mLocker.getArtists();
+        System.out.println( "beginning insertion of " + results.getData().length + " artists" );
+        for ( Artist a : results.getData() )
         {
-            insertArtist( artists.get( i ) );
+            insertArtist( a );
         }
         System.out.println( "insertion complete" );
         mCache.setUpdate( System.currentTimeMillis(), LockerCache.ARTIST );
@@ -672,12 +657,11 @@ public class LockerDb
     
     private void refreshAlbums()  throws SQLiteException, IOException
     {
-        ArrayList<Album> albums = new ArrayList<Album>( mLocker.getAlbums() );
-        int lim = albums.size();
-        System.out.println( "beginning insertion of " + lim + " albums" );
-        for ( int i = 0; i < lim; i++ )
+        DataResult<Album> results = mLocker.getAlbums();
+        System.out.println( "beginning insertion of " + results.getData().length + " albums" );
+        for ( Album a : results.getData() )
         {
-            insertAlbum( albums.get( i ) );
+            insertAlbum( a );
         }
         System.out.println( "insertion complete" );
         mCache.setUpdate( System.currentTimeMillis(), LockerCache.ALBUM );
@@ -685,41 +669,38 @@ public class LockerDb
     
     private void refreshAlbumsForArtist(int artist_id)  throws SQLiteException, IOException
     {
-        ArrayList<Album> albums = new ArrayList<Album>( mLocker.getAlbumsForArtist( artist_id ) );
-        int lim = albums.size();
-        System.out.println( "beginning insertion of " + lim + " albums for artist id " +artist_id );
-        for ( int i = 0; i < lim; i++ )
+        DataResult<Album> results = mLocker.getAlbumsForArtist( artist_id );
+        System.out.println( "beginning insertion of " + results.getData().length + " albums for artist id " +artist_id  );
+        for ( Album a : results.getData() )
         {
-            insertAlbum( albums.get( i ) );
+            insertAlbum( a );
         }
         System.out.println( "insertion complete" );
     }
     
     private void refreshTracksforAlbum(int album_id)  throws SQLiteException, IOException
     {
-        ArrayList<Track> tracks = new ArrayList<Track>( mLocker.getTracksForAlbum( album_id ));
-        int lim = tracks.size();
-        System.out.println( "beginning insertion of " + lim + " tracks for album id " +album_id );
-        for ( int i = 0; i < lim; i++ )
+        DataResult<Track> results = mLocker.getTracksForAlbum( album_id );
+        System.out.println( "beginning insertion of " + results.getData().length + " tracks for album id " +album_id );
+        for( Track t : results.getData() )
         {
-            insertTrack( tracks.get( i ) );
+            insertTrack( t );
         }
         System.out.println( "insertion complete" );
     }
     
     private void refreshTracksforPlaylist(int playlist_id)  throws SQLiteException, IOException
     {
-        ArrayList<Track> tracks = new ArrayList<Track>( mLocker.getTracksForPlaylist( playlist_id ));
-        int lim = tracks.size();
-        System.out.println( "beginning insertion of " + lim + " tracks for playlist id " +playlist_id );
+        DataResult<Track> results = mLocker.getTracksForPlaylist( playlist_id );
+        System.out.println( "beginning insertion of " + results.getData().length + " tracks for playlist id " +playlist_id );
         
         mDb.delete( "playlist_tracks", "playlist_id=" + playlist_id, null );
-        for ( int i = 0; i < lim; i++ )
+        for ( Track t : results.getData() )
         {
             ContentValues cv = new ContentValues(); // TODO move this outside the loop?
-            insertTrack( tracks.get( i ) );
+            insertTrack( t );
             cv.put("playlist_id", playlist_id);
-            cv.put( "track_id", tracks.get( i ).getId() );
+            cv.put( "track_id", t.getId() );
             mDb.insert( "playlist_tracks", "Unknown", cv );
         }
         System.out.println( "insertion complete" );

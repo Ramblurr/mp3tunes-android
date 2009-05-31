@@ -358,7 +358,7 @@ public class Player extends Activity
                     artUrl = MP3tunesApplication.getInstance().player.getArtUrl();
                     String[] metadata = MP3tunesApplication.getInstance().player.getMetadata();
                     int track_id = Integer.parseInt( metadata[1] );
-                    Collection<Track> tracks = mLocker.getTracksForAlbum( Integer.parseInt( metadata[5] ) );
+                    Track[] tracks = mLocker.getTracksForAlbum( Integer.parseInt( metadata[5] ) ).getData();
                     // TODO maybe a better way to do this. probably cache it in the database
                     for( Track t : tracks)
                     {
