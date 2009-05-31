@@ -116,7 +116,7 @@ public class LockerDb
                 cv.put( "_id", track.getArtistId() );
                 cv.put( "artist_name", track.getArtistName() );
 
-                Cursor c = mDb.query( "artist", new String[] { "_id" }, "_id='"
+                Cursor c = mDb.query( "artist", Music.ID, "_id='"
                         + track.getArtistId() + "'", null, null, null, null );
                 if ( !c.moveToNext() )
                     mDb.insert( "artist", "Unknown", cv );
@@ -133,7 +133,7 @@ public class LockerDb
                 cv.put( "_id", track.getAlbumId() );
                 cv.put( "album_name", track.getAlbumTitle() );
                 cv.put( "artist_id", track.getArtistId() );
-                Cursor c = mDb.query( "album", new String[] { "_id" }, "_id='" + track.getAlbumId()
+                Cursor c = mDb.query( "album", Music.ID, "_id='" + track.getAlbumId()
                         + "'", null, null, null, null );
                 // Cursor c =
                 // mDb.rawQuery("SELECT _id FROM album WHERE _id='"+track.getAlbumId()+"'"
@@ -144,7 +144,7 @@ public class LockerDb
                 c.close();
             }
 
-            Cursor c = mDb.query( "track", new String[] { "_id" }, "_id='" + track.getId() + "'",
+            Cursor c = mDb.query( "track", Music.ID, "_id='" + track.getId() + "'",
                     null, null, null, null );
             if ( !c.moveToNext() )
             {
@@ -196,7 +196,7 @@ public class LockerDb
                 cv.put( "album_count", artist.getAlbumCount() );
                 cv.put( "track_count", artist.getTrackCount() );
 
-                Cursor c = mDb.query( "artist", new String[] { "_id" }, "_id='"
+                Cursor c = mDb.query( "artist", Music.ID, "_id='"
                         + artist.getId() + "'", null, null, null, null );
                 if ( !c.moveToNext() ) // artist doesn't exist
                     mDb.insert( "artist", "Unknown", cv );
@@ -233,7 +233,7 @@ public class LockerDb
                 cv.put( "year", album.getYear() );
                 cv.put( "track_count", album.getTrackCount() );
 
-                Cursor c = mDb.query( "album", new String[] { "_id" }, "_id='"
+                Cursor c = mDb.query( "album", Music.ID, "_id='"
                         + album.getId() + "'", null, null, null, null );
 
                 if ( !c.moveToNext() ) // album doesn't exist
@@ -270,7 +270,7 @@ public class LockerDb
                 cv.put( "file_count", playlist.getCount() );
                 cv.put( "file_name", playlist.getFileName() );
 
-                Cursor c = mDb.query( "playlist", new String[] { "_id" }, "_id='"
+                Cursor c = mDb.query( "playlist", Music.ID, "_id='"
                         + playlist.getId() + "'", null, null, null, null );
 
                 if ( !c.moveToNext() ) // album doesn't exist

@@ -33,6 +33,8 @@ public class Music
         TRACK, ARTIST, ALBUM, PLAYLIST, CURRENT_PLAYLIST;
     }
     
+    public static String[] ID = { "_id" };
+    
     public static String[] TOKEN = { "type", "token", "count" };
     
     public static String[] ARTIST = { "_id", "artist_name" };
