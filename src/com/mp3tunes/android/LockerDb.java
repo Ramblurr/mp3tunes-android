@@ -419,7 +419,7 @@ public class LockerDb
     
     private Cursor queryPlaylists()
     {
-        return mDb.query( "playlist", Music.PLAYLIST, null, null, null, null, Music.PLAYLIST[1] );   
+        return mDb.query( "playlist", Music.PLAYLIST, null, null, null, null, "lower("+Music.PLAYLIST[1]+")" );   
     }
     
     private Cursor queryPlaylists( int playlist_id )
@@ -435,29 +435,28 @@ public class LockerDb
     
     private Cursor queryArtists()
     {
-        return mDb.query( "artist", Music.ARTIST, null, null,
-                null, null, Music.ARTIST[1] );   
+        return mDb.query( "artist", Music.ARTIST, null, null, null, null, "lower("+Music.ARTIST[1]+")" );   
     }
     
     private Cursor queryAlbums()
     {
-        return mDb.query( "album", Music.ALBUM, null, null, null, null, Music.ALBUM[Music.ALBUM_MAPPING.ALBUM_NAME] );
+        return mDb.query( "album", Music.ALBUM, null, null, null, null, "lower("+Music.ALBUM[Music.ALBUM_MAPPING.ALBUM_NAME]+")" );
     }
     
     private Cursor queryAlbums( int artist_id )
     {
         return  mDb.query( "album", Music.ALBUM, "artist_id=" + artist_id,
-                null, null, null, Music.ALBUM[Music.ALBUM_MAPPING.ALBUM_NAME] );  
+                null, null, null, "lower("+Music.ALBUM[Music.ALBUM_MAPPING.ALBUM_NAME]+")" );  
     }
     
     private Cursor queryTracks()
     {
-        return mDb.query( "track", Music.TRACK, null, null, null, null, Music.TRACK[Music.TRACK_MAPPING.TITLE] );
+        return mDb.query( "track", Music.TRACK, null, null, null, null, "lower("+Music.TRACK[Music.TRACK_MAPPING.TITLE]+")" );
     }
 
     private Cursor queryTracks( int album_id )
     {
-        return mDb.query( "track", Music.TRACK, "album_id=" + album_id, null, null, null, Music.TRACK[Music.TRACK_MAPPING.TRACKNUM] );
+        return mDb.query( "track", Music.TRACK, "album_id=" + album_id, null, null, null, "lower("+Music.TRACK[Music.TRACK_MAPPING.TRACKNUM]+")" );
     }
 
     /**

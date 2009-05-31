@@ -27,8 +27,8 @@
 	
 	<string name="loading_msg">Loading Locker..</string>
 	
-    <string name="alphabeta">\u0020\u0028\u0029\u002D\u0022\u00270123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ</string>
-    <string name="alphabet">asdfghjkl</string>
+<!--    <string name="alphabet">\u0020\u0028\u0029\u002D\u0022\u00270123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ</string>-->
+    <string name="alphabet">0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ</string>
 	
 	<string name="ERROR_AUTH_TITLE">Incorrect Login</string>
 	<string name="ERROR_AUTH">Unable to login to MP3tunes.  Please check your email and password and try again.</string>
