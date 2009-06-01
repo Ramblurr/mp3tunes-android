@@ -51,6 +51,7 @@ import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.Window;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
 import android.widget.ListView;
@@ -141,6 +142,7 @@ public class LockerList extends ListActivity
     public void onCreate( Bundle icicle )
     {
         super.onCreate( icicle );
+        requestWindowFeature( Window.FEATURE_NO_TITLE );
         setContentView( R.layout.lockerlist );
 
         mLocker = ( Locker ) MP3tunesApplication.getInstance().map.get( "mp3tunes_locker" );
