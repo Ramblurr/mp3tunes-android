@@ -18,21 +18,21 @@
 		<item name="android:textStyle">bold</item>
 	</style>
 	<style name="TunesButton">
-<!--		<item name="android:background">@+drawable/player_controls</item>-->
+		<item name="android:background">#000000FF</item>
 		<item name="android:layout_width">80dip</item>
 		<item name="android:layout_height">76dip</item>
 	</style>
-	<style name="TunesButton.Love">
-		<item name="android:src">@+drawable/right_play</item>
+	<style name="TunesButton.PlayPause">
+		<item name="android:src">@+drawable/play_big</item>
 	</style>
-	<style name="TunesButton.Ban">
-		<item name="android:src">@+drawable/right_play</item>
+	<style name="TunesButton.Fwd">
+		<item name="android:src">@+drawable/ffw</item>
 	</style>
 	<style name="TunesButton.Stop">
 		<item name="android:src">@+drawable/right_play</item>
 	</style>
-	<style name="TunesButton.Skip">
-		<item name="android:src">@+drawable/right_play</item>
+	<style name="TunesButton.Rew">
+		<item name="android:src">@+drawable/rew</item>
 	</style>
         
 </resources>

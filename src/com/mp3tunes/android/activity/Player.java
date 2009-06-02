@@ -79,14 +79,15 @@ public class Player extends Activity
         mArtistName = (TextView) findViewById(R.id.track_artist);
         mTrackName = (TextView) findViewById(R.id.track_title);
         
-        mPrevButton = (ImageButton) findViewById(R.id.love);
+        mPrevButton = ( ImageButton ) findViewById( R.id.rew );
         mPrevButton.setOnClickListener(mPrevListener);
-        mPlayButton = (ImageButton) findViewById(R.id.ban);
+        mPlayButton = ( ImageButton ) findViewById( R.id.play );
         mPlayButton.setOnClickListener(mPlayListener);
-        mStopButton = (ImageButton) findViewById(R.id.stop);
-        mStopButton.requestFocus();
-        mStopButton.setOnClickListener(mStopListener);
-        mNextButton = (ImageButton) findViewById(R.id.skip);
+        mPlayButton.requestFocus();
+//        mStopButton = (ImageButton) findViewById(R.id.stop);
+//        mStopButton.requestFocus();
+//        mStopButton.setOnClickListener(mStopListener);
+        mNextButton = ( ImageButton ) findViewById( R.id.fwd );
         mNextButton.setOnClickListener(mNextListener);
         
         mAlbumArtWorker = new Worker("album art worker");
@@ -138,6 +139,8 @@ public class Player extends Activity
         if (MP3tunesApplication.getInstance().player == null)
             MP3tunesApplication.getInstance().bindPlayerService();
         updateTrackInfo();
+        setPauseButtonImage();
+
         super.onResume();
     }
 
@@ -163,19 +166,57 @@ public class Player extends Activity
 
             if (MP3tunesApplication.getInstance().player == null)
                 return;
-            // TODO Play
+            try
+            {
+                if( MP3tunesApplication.getInstance().player.isPlaying() )
+                    MP3tunesApplication.getInstance().player.pause();
+                else
+                    MP3tunesApplication.getInstance().player.start();
+            }
+            catch ( RemoteException e )
+            {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            }
         }
     };
     
-    private View.OnClickListener mStopListener = new View.OnClickListener() {
-
-        public void onClick(View v) {
-
-            if (MP3tunesApplication.getInstance().player == null)
-                return;
-            // TODO Stop
+    private void setPauseButtonImage()
+    {
+         try
+        {
+            if ( MP3tunesApplication.getInstance().player != null && MP3tunesApplication.getInstance().player.isPlaying() )
+            {
+                mPlayButton.setImageResource( R.drawable.pause_button );
+            }
+            else
+            {
+                mPlayButton.setImageResource( R.drawable.play_button );
+            }
         }
-    };
+        catch ( RemoteException ex )
+        {
+        }
+    }
+
+    
+//    private View.OnClickListener mStopListener = new View.OnClickListener() {
+//
+//        public void onClick(View v) {
+//
+//            if (MP3tunesApplication.getInstance().player == null)
+//                return;
+//            try
+//            {
+//                MP3tunesApplication.getInstance().player.stop();
+//            }
+//            catch ( RemoteException e )
+//            {
+//                // TODO Auto-generated catch block
+//                e.printStackTrace();
+//            }
+//        }
+//    };
     
     private View.OnClickListener mNextListener = new View.OnClickListener() {
 
@@ -183,7 +224,15 @@ public class Player extends Activity
 
             if (MP3tunesApplication.getInstance().player == null)
                 return;
-            // TODO Next
+            try
+            {
+                MP3tunesApplication.getInstance().player.next();
+            }
+            catch ( RemoteException e )
+            {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            }
         }
     };
     
@@ -223,6 +272,8 @@ public class Player extends Activity
                             getResources().getString(
                                     R.string.ERROR_PLAYBACK_FAILED));
                 }
+            } else if(action.equals( Mp3tunesService.PLAYBACK_STATE_CHANGED )) {
+                setPauseButtonImage();
             }
         }
     };
@@ -253,7 +304,7 @@ public class Player extends Activity
             mAlbum.invalidate();
             if (art == null)
                  new LoadAlbumArtTask().execute((Void) null);
-
+            setPauseButtonImage();
         } catch (java.util.concurrent.RejectedExecutionException e) {
             e.printStackTrace();
         } catch (RemoteException ex) {

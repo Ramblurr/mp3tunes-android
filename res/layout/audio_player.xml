@@ -37,10 +37,10 @@
 				android:layout_width="fill_parent" android:gravity="center"
 				android:layout_alignParentBottom="true">
 
-				<ImageButton android:id="@+id/love" style="@+style/TunesButton.Love" />
-				<ImageButton android:id="@+id/ban" style="@+style/TunesButton.Ban" />
-				<ImageButton android:id="@+id/stop" style="@+style/TunesButton.Stop" />
-				<ImageButton android:id="@+id/skip" style="@+style/TunesButton.Skip" />
+				<ImageButton android:id="@+id/rew" style="@+style/TunesButton.Rew" />
+				<ImageButton android:id="@+id/play" style="@+style/TunesButton.PlayPause" />
+<!--				<ImageButton android:id="@+id/stop" style="@+style/TunesButton.Stop" />-->
+				<ImageButton android:id="@+id/fwd" style="@+style/TunesButton.Fwd" />
 
 			</LinearLayout>
 
