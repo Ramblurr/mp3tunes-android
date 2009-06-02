@@ -916,7 +916,7 @@ public class LockerList extends ListActivity
               MP3tunesApplication.getInstance().bindPlayerService();
               MP3tunesApplication.getInstance().player.start();
               Intent i = new Intent( LockerList.this, Player.class );
-              i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+//              i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
               startActivity( i );
           } else
               System.out.println("Player is null!");
