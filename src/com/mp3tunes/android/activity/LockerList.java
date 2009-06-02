@@ -31,6 +31,7 @@ import com.mp3tunes.android.LockerDb;
 import com.mp3tunes.android.MP3tunesApplication;
 import com.mp3tunes.android.Music;
 import com.mp3tunes.android.R;
+import com.mp3tunes.android.LockerDb.DbSearchQuery;
 import com.mp3tunes.android.service.Mp3tunesService;
 import com.mp3tunes.android.util.UserTask;
 
@@ -52,10 +53,15 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.Window;
+import android.view.View.OnClickListener;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
+import android.widget.Button;
+import android.widget.EditText;
+import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.TextView;
+import android.widget.ViewFlipper;
 
 /**
  * Primary activity that encapsulates browsing the locker
@@ -65,6 +71,12 @@ import android.widget.TextView;
  */
 public class LockerList extends ListActivity
 {
+    private EditText mSearchField;
+    private Button mSearchButton;
+    private TextView mHeaderText;
+    private LinearLayout mSearchBar;
+    private LinearLayout mMainHeader;
+    private ViewFlipper mViewFlipper;
 
     // the database cursor
     private Cursor mCursor = null;
@@ -178,6 +190,14 @@ public class LockerList extends ListActivity
         mIntentFilter.addAction( Mp3tunesService.PLAYBACK_ERROR );
         mIntentFilter.addAction( Mp3tunesService.META_CHANGED );
         
+        mSearchField = ( EditText ) findViewById( R.id.search_editbox );
+        mSearchButton = ( Button ) findViewById( R.id.search_button );
+        mSearchButton.setOnClickListener( mSearchListener );
+        mHeaderText = ( TextView ) findViewById( R.id.header_text );
+        mSearchBar = ( LinearLayout ) findViewById( R.id.SearchBar );
+        mMainHeader = ( LinearLayout ) findViewById( R.id.main_header );
+        mViewFlipper = ( ViewFlipper ) findViewById( R.id.ViewFlipper );
+        
         getAlphabet(LockerList.this);
         
         displayMainMenu( TRANSLATION_LEFT );
@@ -186,6 +206,8 @@ public class LockerList extends ListActivity
     @Override
     protected void onSaveInstanceState( Bundle outState )
     {
+//        outState.putParcelable( "cursor", mCursor );
+//        outState.putSerializable( "cursor", mCursor );
         //TODO save state
     }
     
@@ -275,15 +297,51 @@ public class LockerList extends ListActivity
         {
             if ( !mHistory.isEmpty() )
             {
+                if( mPositionMenu == STATE.SEARCH ) {
+                    getListView().setVisibility( View.VISIBLE );
+                    toggleHeader();
+                }
                 HistoryUnit u = mHistory.pop();
                 mPositionMenu = u.state;
                 getListView().startAnimation( mLTRanim );
                 setListAdapter( u.adapter );
+                ((ListAdapter) getListAdapter()).disableLoadBar();
                 return true;
             }
         }
         return false;
     }
+    
+    private void toggleHeader()
+    {
+        if( mViewFlipper.getDisplayedChild() == 0 )
+        {
+//            performSlide( TRANSLATION_RIGHT );
+            mViewFlipper.setDisplayedChild( 1 );
+//            mViewFlipper.setInAnimation( mRTLanim );
+//            mViewFlipper.setOutAnimation( mLTRanim );
+            getListView().setVisibility( View.INVISIBLE );
+            
+        } else {
+//            performSlide( TRANSLATION_LEFT );
+            mViewFlipper.setDisplayedChild( 0 );
+//            mViewFlipper.setInAnimation( mLTRanim );
+//            mViewFlipper.setOutAnimation( mRTLanim );
+            getListView().setVisibility( View.VISIBLE );
+        }
+            
+    }
+    
+    OnClickListener mSearchListener = new OnClickListener()
+    {
+    
+        public void onClick( View arg0 )
+        {
+//            mHeaderText.setVisibility( View.INVISIBLE );
+            new SearchTask().execute( mSearchField.getText().toString() );
+            
+        }
+    };
 
     /** displays the main menu */
     private void displayMainMenu( int sense )
@@ -301,14 +359,7 @@ public class LockerList extends ListActivity
         setListAdapter( adapter );
 
         getListView().setSelection( mPositionRow );
-        if ( sense == TRANSLATION_LEFT )
-        {
-            getListView().startAnimation( mRTLanim );
-        }
-        else if ( sense == TRANSLATION_RIGHT )
-        {
-            getListView().startAnimation( mLTRanim );
-        }
+        performSlide( sense );
     }
 
     protected void onListItemClick( ListView l, View vu, int position, long id )
@@ -356,29 +407,7 @@ public class LockerList extends ListActivity
             {
                 ListAdapter a = ( ListAdapter ) getListAdapter();
                 int track_id = ( Integer ) a.getItem( pos );
-                mDb.clearPlaylist();
-                mDb.insertTrackPlaylist( track_id );
-                System.out.println("playlist size: " + mDb.getPlaylistSize());
-                
-
-                try
-                {
-                    if( MP3tunesApplication.getInstance().player != null ) 
-                    {
-                        MP3tunesApplication.getInstance().bindPlayerService();
-                        MP3tunesApplication.getInstance().player.start();
-                        Intent i = new Intent( LockerList.this, Player.class );
-                        i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                        startActivity( i );
-                    } else
-                        System.out.println("Player is null!");
-                    
-                }
-                catch ( RemoteException e )
-                {
-                    // TODO Auto-generated catch block
-                    e.printStackTrace();
-                }
+                playTrack( track_id );
             }
             else if ( mPositionMenu == STATE.PLAYLISTS )
             {
@@ -389,10 +418,50 @@ public class LockerList extends ListActivity
             }
             else if ( mPositionMenu == STATE.SEARCH )
             {
-
+                ListAdapter a = ( ListAdapter ) getListAdapter();
+                int objid = ( Integer ) a.getItem( pos );
+                Music.Meta type = ( Music.Meta ) a.getSecondValue( pos );
+                
+                switch ( type )
+                {
+                    case ARTIST:
+                        new FetchAlbumsTask().execute( TRANSLATION_LEFT, objid );
+                        break; 
+                    case TRACK:
+                        playTrack( objid );
+                        break;
+                }
+                
             }
         }
 
+    }
+    
+    private void playTrack( int track_id )
+    {
+        mDb.clearPlaylist();
+        mDb.insertTrackPlaylist( track_id );
+        System.out.println("playlist size: " + mDb.getPlaylistSize());
+        
+
+        try
+        {
+            if( MP3tunesApplication.getInstance().player != null ) 
+            {
+                MP3tunesApplication.getInstance().bindPlayerService();
+                MP3tunesApplication.getInstance().player.start();
+                Intent i = new Intent( LockerList.this, Player.class );
+                i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                startActivity( i );
+            } else
+                System.out.println("Player is null!");
+            
+        }
+        catch ( RemoteException e )
+        {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
     }
 
     private void showSubMenu( int sense )
@@ -407,7 +476,6 @@ public class LockerList extends ListActivity
 //        }
 
         // which manu menu option has been selected
-        int icon_id = -1;
         switch ( mMainOpts[mPositionRow] )
         {
         case R.string.artists:
@@ -424,6 +492,9 @@ public class LockerList extends ListActivity
 
         case R.string.search:
             mPositionMenu = STATE.SEARCH;
+            (( ListAdapter ) getListAdapter() ).disableLoadBar();
+            toggleHeader();
+            
             break;
 
         case R.string.playlists:
@@ -432,7 +503,7 @@ public class LockerList extends ListActivity
         }
     }
     
-    private void handleListSwitch( int id_field, int icon_id, int text_id, int disclosure_id, String[] tokens )
+    private void handleListSwitch( int id_field, int icon_id, int text_id, int second_text_id, int disclosure_id, String[] tokens )
     {
         ((ListAdapter) getListAdapter()).disableLoadBar();
         // if the cursor is empty, we adjust the text in function of the submenu
@@ -460,7 +531,7 @@ public class LockerList extends ListActivity
             }
         }
 
-        setListAdapter( adapterFromCursor( id_field, icon_id, text_id, disclosure_id, tokens ) );
+        setListAdapter( adapterFromCursor( id_field, icon_id, text_id, second_text_id, disclosure_id, tokens ) );
     }
 
     /**
@@ -480,13 +551,16 @@ public class LockerList extends ListActivity
      *            an array of tokens to be used in the indexer
      * @return
      */
-    private ListAdapter adapterFromCursor( int id_field, int icon_id, int text_id, int disclosure_id, String[] tokens )
+    private ListAdapter adapterFromCursor( int id_field, int icon_id, int text_id, int second_text_id, int disclosure_id, String[] tokens )
     {
         ArrayList<ListEntry> iconifiedEntries = new ArrayList<ListEntry>();
         while ( mCursor.moveToNext() )
         {
+            String second = ""; 
+            if( second_text_id > -1 )
+                second = mCursor.getString( second_text_id );
             ListEntry entry = new ListEntry( mCursor.getInt( id_field ), icon_id == -1 ? null
-                    : icon_id, mCursor.getString( text_id ), disclosure_id );
+                    : icon_id, mCursor.getString( text_id ), disclosure_id, second );
             iconifiedEntries.add( entry );
 
         }
@@ -621,16 +695,9 @@ public class LockerList extends ListActivity
         public void onPostExecute( Boolean result )
         {
             // TODO error handling
-            if ( sense == TRANSLATION_LEFT )
-            {
-                getListView().startAnimation( mRTLanim );
-            }
-            else if ( sense == TRANSLATION_RIGHT )
-            {
-                getListView().startAnimation( mLTRanim );
-            }
+            performSlide( sense );
             mPositionMenu = STATE.ARTIST;
-            handleListSwitch( 0, R.drawable.artist_icon, 1, R.drawable.arrow, tokens );
+            handleListSwitch( 0, R.drawable.artist_icon, 1, -1, R.drawable.arrow, tokens );
         }
     }
     
@@ -680,16 +747,9 @@ public class LockerList extends ListActivity
         public void onPostExecute( Boolean result )
         {
             // TODO error handling
-            if ( sense == TRANSLATION_LEFT )
-            {
-                getListView().startAnimation( mRTLanim );
-            }
-            else if ( sense == TRANSLATION_RIGHT )
-            {
-                getListView().startAnimation( mLTRanim );
-            }
+            performSlide( sense );
             mPositionMenu = STATE.ALBUM;
-            handleListSwitch( 0, R.drawable.album_icon, 1, R.drawable.arrow, tokens );
+            handleListSwitch( 0, R.drawable.album_icon, 1, 3, R.drawable.arrow, tokens );
         }
     }
     
@@ -730,17 +790,9 @@ public class LockerList extends ListActivity
         @Override
         public void onPostExecute( Boolean result )
         {
-            // TODO error handling
-            if ( sense == TRANSLATION_LEFT )
-            {
-                getListView().startAnimation( mRTLanim );
-            }
-            else if ( sense == TRANSLATION_RIGHT )
-            {
-                getListView().startAnimation( mLTRanim );
-            }
+            performSlide( sense );
             mPositionMenu = STATE.TRACK;
-            handleListSwitch( 0, R.drawable.song_icon, 1, R.drawable.right_play, tokens );
+            handleListSwitch( 0, R.drawable.song_icon, 1, 2, R.drawable.right_play, tokens );
         }
     }
     
@@ -781,21 +833,92 @@ public class LockerList extends ListActivity
         public void onPostExecute( Boolean result )
         {
             // TODO error handling
-            if ( sense == TRANSLATION_LEFT )
-            {
-                getListView().startAnimation( mRTLanim );
-            }
-            else if ( sense == TRANSLATION_RIGHT )
-            {
-                getListView().startAnimation( mLTRanim );
-            }
+
             mPositionMenu = STATE.PLAYLISTS;
             if(fetching_tracks)
-                handleListSwitch( 0, R.drawable.song_icon, 1, R.drawable.right_play, null );
+                handleListSwitch( 0, R.drawable.song_icon, 1, -1, R.drawable.right_play, null );
             else
-                handleListSwitch( 0, R.drawable.playlist_icon, 1, R.drawable.right_play, null );
+                handleListSwitch( 0, R.drawable.playlist_icon, 1, -1, R.drawable.right_play, null );
         }
     }
+    
+    private class SearchTask extends UserTask<String, Void, Boolean>
+    {
+        int sense = -1;
+        String[] tokens= null;
+        LockerDb.DbSearchResult res;
+        @Override
+        public void onPreExecute()
+        {
+            
+        }
+
+        @Override
+        public Boolean doInBackground( String... params )
+        {
+            try
+            {
+                res = mDb.search( mDb.new DbSearchQuery( params[0], true, false, true ) );
+                
+            }
+            catch ( Exception e )
+            {
+                return false;
+            }
+            return true;
+        }
+
+        @Override
+        public void onPostExecute( Boolean result )
+        {
+            if(res == null)
+            {
+                System.out.println("No results");
+                return;
+            }
+            ArrayList<ListEntry> entries = new ArrayList<ListEntry>();
+            if( res.mArtists != null ) 
+                entries.addAll( entriesFromCursor( 0, R.drawable.artist_icon, 1, R.drawable.arrow, res.mArtists, Music.Meta.ARTIST ) );
+            if( res.mTracks != null )
+                entries.addAll( entriesFromCursor( 0, R.drawable.song_icon, 1, R.drawable.right_play, res.mTracks, Music.Meta.TRACK ) );
+            System.out.println("total entries: "  + entries.size());
+            ListAdapter adapter = new ListAdapter( LockerList.this );
+            adapter.setSourceIconified( entries );
+            setListAdapter( adapter );
+            getListView().setVisibility( View.VISIBLE );
+            res.mArtists.close();
+            res.mTracks.close();
+        }
+    }
+    
+  private ArrayList<ListEntry> entriesFromCursor( int id_field, int icon_id, int text_id, int disclosure_id, Cursor cursor, Music.Meta type )
+  {
+      ArrayList<ListEntry> iconifiedEntries = new ArrayList<ListEntry>();
+      System.out.println("Cursor size: " + cursor.getCount());
+      while ( cursor.moveToNext() )
+      {
+          ListEntry entry = new ListEntry( cursor.getInt( id_field ), icon_id == -1 ? null
+                  : icon_id, cursor.getString( text_id ), disclosure_id );
+          entry.setSecondValue( type );
+          iconifiedEntries.add( entry );
+
+      }
+      System.out.println("made entries: " + iconifiedEntries.size());
+      return iconifiedEntries;
+  }
+  
+  private void performSlide( int sense )
+  {
+      if ( sense == TRANSLATION_LEFT )
+      {
+          getListView().startAnimation( mRTLanim );
+      }
+      else if ( sense == TRANSLATION_RIGHT )
+      {
+          getListView().startAnimation( mLTRanim );
+      }
+  }
+  
 
 }
 

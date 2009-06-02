@@ -43,6 +43,11 @@ public class ListEntry{
 	 */
 	Object value;
 	
+	   /**
+     * Value that will be returned by Adapter.getValue2
+     */
+    Object value2;
+	
 	/**
 	 * Url to the external image that will be displayed left
 	 * to the text (optional instead of id)
@@ -82,6 +87,12 @@ public class ListEntry{
 		this.disclosure_id = disclosure_id;
 	}
 	
+   public ListEntry(Object value, int id, String text, int disclosure_id, String text_second) {
+        this(value, id, text);
+        this.text_second = text_second;
+        this.disclosure_id = disclosure_id;
+    }
+	
 	public ListEntry(Object value, int id, String text, String url, int disclosure_id) {
 		this(value, id, text, url);
 		
@@ -96,4 +107,9 @@ public class ListEntry{
         
         this.text_second = text_second;
     }
+	
+	public void setSecondValue( Object obj )
+	{
+	    value2 = obj;
+	}
 }

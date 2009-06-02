@@ -39,6 +39,7 @@ import com.binaryelysium.mp3tunes.api.Playlist;
 import com.binaryelysium.mp3tunes.api.Token;
 import com.binaryelysium.mp3tunes.api.Track;
 import com.binaryelysium.mp3tunes.api.results.DataResult;
+import com.binaryelysium.mp3tunes.api.results.SearchResult;
 import com.mp3tunes.android.LockerCache;
 
 /**
@@ -458,6 +459,37 @@ public class LockerDb
     {
         return mDb.query( "track", Music.TRACK, "album_id=" + album_id, null, null, null, "lower("+Music.TRACK[Music.TRACK_MAPPING.TRACKNUM]+")" );
     }
+    
+    private Cursor querySearch( String query, Music.Meta type )
+    {
+        String table;
+        String[] columns;
+        String selection;
+//        String sort;
+        switch ( type )
+        {
+            case TRACK:
+                table = "track";
+                columns = Music.TRACK;
+                selection = "lower(title) LIKE lower('%"+query+"%')";
+//                selection = "MATCH (title) AGAINST ('+"+query+"' IN BOOLEAN MODE)";
+                break;
+            case ARTIST:
+                table = "artist";
+                columns = Music.ARTIST;
+//                selection = "MATCH (artist_name) AGAINST ('+"+query+"' IN BOOLEAN MODE)";
+                selection = "lower(artist_name) LIKE lower('%"+query+"%')";
+                break;
+            case ALBUM:
+                table = "album";
+                columns = Music.ALBUM;
+                selection = "lower(album_name) LIKE lower('%"+query+"%')";
+//                selection = "MATCH (album_name) AGAINST ('+"+query+"' IN BOOLEAN MODE)";
+                break;
+            default: return null;
+        }
+        return mDb.query( table, columns, selection, null, null, null, null, null);
+    }
 
     /**
      * 
@@ -634,6 +666,54 @@ public class LockerDb
         return t;
     }
     
+    public DbSearchResult search( DbSearchQuery query )
+    {
+        try
+        {
+            // First, determine which types we need to refresh.
+            // this construct seems complicated (which it is..)
+            // but it is faster than performing three separate http calls.
+            // This way we can lump the refreshes into one http call
+
+            boolean artist = false, track = false ,album = false;
+            if(query.mTracks && !mCache.isCacheValid( LockerCache.TRACK ) )
+                track = true;
+            if(query.mAlbums && !mCache.isCacheValid( LockerCache.ALBUM ) )
+                album = true;
+            if(query.mArtists && !mCache.isCacheValid( LockerCache.ARTIST ) )
+                artist = true;
+            
+            // Perform the single http search call
+            refreshSearch( query.mQuery, artist, album, track );
+            
+            DbSearchResult res = new DbSearchResult();
+            if( query.mTracks )
+                res.mTracks = querySearch( query.mQuery, Music.Meta.TRACK );
+            if( query.mAlbums )
+                res.mAlbums = querySearch( query.mQuery, Music.Meta.ALBUM );
+            if( query.mArtists )
+                res.mArtists = querySearch( query.mQuery, Music.Meta.ARTIST );
+            
+            System.out.println("Got artists: " + res.mArtists.getCount());
+            System.out.println("Got tracks: " + res.mTracks.getCount());
+            return res;
+        }
+        catch ( SQLiteException e )
+        {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+        catch ( IOException e )
+        {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+    
+        
+        
+        return null;
+    }
+    
     /**
      * insert several tracks into the playlist
      * Note: the song ids are not verified!
@@ -791,6 +871,39 @@ public class LockerDb
         System.out.println( "insertion complete" );
     }
     
+    private void refreshSearch( String query, boolean artist, boolean album, boolean track )  throws SQLiteException, IOException
+    {
+        if( !artist && !album && !track )
+            return;
+        SearchResult results = mLocker.search( query, artist, album, track, 50, 0 );
+        
+        if( artist ) 
+        {
+            System.out.println( "beginning insertion of " + results.getArtists().length + " artists" );
+            for ( Artist a : results.getArtists() )
+            {
+                insertArtist( a );
+            }
+        }
+        if( album ) 
+        {
+            System.out.println( "beginning insertion of "+  results.getAlbums().length + " albums" );
+            for ( Album  a : results.getAlbums() )
+            {
+                insertAlbum( a );
+            }
+        }
+        if( track ) 
+        {
+            System.out.println( "beginning insertion of "+  results.getTracks().length + " tracks" );
+            for ( Track t : results.getTracks() )
+            {
+                insertTrack( t );
+            }
+        }
+        System.out.println( "insertion complete" );
+    }
+    
     private void refreshTokens(Music.Meta type)  throws SQLiteException, IOException
     {
         DataResult<Token> results;
@@ -833,6 +946,28 @@ public class LockerDb
             list[i] = tokens[i].getToken();
         }
         return list;
+    }
+    
+    public class DbSearchResult
+    {
+        public Cursor mArtists = null;
+        public Cursor mAlbums = null;
+        public Cursor mTracks = null;
+    }
+    
+    public class DbSearchQuery
+    {
+        public DbSearchQuery( String query, boolean artists, boolean albums, boolean tracks )
+        {
+            mQuery = query;
+            mArtists = artists;
+            mAlbums = albums;
+            mTracks = tracks;
+        }
+        public String mQuery;
+        public boolean mArtists;
+        public boolean mAlbums;
+        public boolean mTracks;
     }
 
     /**

@@ -327,6 +327,10 @@ public class ListAdapter extends BaseAdapter implements Serializable, ImageDownl
         public Object getItem(int position) {
                 return mList.get(position).value;
         }
+        
+        public Object getSecondValue(int position) {
+            return mList.get(position).value2;
+    }
 
         public long getItemId(int position) {
                 return position;
@@ -370,7 +374,9 @@ public class ListAdapter extends BaseAdapter implements Serializable, ImageDownl
 
         public Object[] getSections()
         {
-            return mIndexer.getSections();
+            if( mIndexer != null )
+                return mIndexer.getSections();
+            return null;
         }
 
 }

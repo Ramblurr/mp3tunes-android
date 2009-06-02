@@ -14,28 +14,101 @@
         Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301,
         USA.
     -->
-<LinearLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
-    android:orientation="vertical"
+<RelativeLayout
+    android:id="@+id/main_layout"
     android:layout_width="fill_parent"
     android:layout_height="fill_parent"
-    android:background="@drawable/back3">
-
-    <com.mp3tunes.android.FastScrollView
+    xmlns:android="http://schemas.android.com/apk/res/android">
+    <ViewFlipper
+        android:id="@+id/ViewFlipper"
         android:layout_width="fill_parent"
-        android:layout_height="fill_parent">
-        <ListView
-            android:id="@+id/android:list"
+        android:layout_height="60dip">
+        <LinearLayout
+            android:id="@+id/main_header"
+            android:background="@drawable/tab_bar_rest"
             android:layout_width="fill_parent"
-            android:fadingEdgeLength="1.0dp"
-            android:layout_height="fill_parent" />
-
-        <TextView
-            android:id="@+id/android:empty"
+            android:paddingTop="4dip"
+            android:layout_height="60dip">
+            <ImageView
+                android:id="@+id/header_logo"
+                android:layout_height="wrap_content"
+                android:layout_width="wrap_content"
+                android:gravity="center_vertical|center_horizontal" 
+                android:paddingLeft="60dip"
+                android:background="@drawable/icon" />
+            <TextView
+                android:id="@+id/header_text"
+                android:layout_height="fill_parent"
+                android:gravity="center_vertical|center_horizontal"
+                android:text="MP3tunes Locker"
+                android:textSize="8pt"
+                android:textStyle="bold"
+                android:layout_width="wrap_content"
+                android:paddingLeft="12dip"
+                android:paddingRight="12dip"
+                android:textColor="#ffffff" />
+        </LinearLayout>
+        <LinearLayout
+            android:id="@+id/SearchBar"
+            android:background="@drawable/tab_bar_rest"
             android:layout_width="fill_parent"
-            android:layout_height="fill_parent"
-            android:text="" />
-    </com.mp3tunes.android.FastScrollView>
+            android:layout_height="60dip"
+            android:paddingTop="4dip">
+            <EditText
+                android:id="@+id/search_editbox"
+                android:layout_height="wrap_content"
+                android:layout_width="fill_parent"
+                android:textSize="18sp"
+                android:layout_alignParentLeft="true"
+                android:layout_alignLeft="@+id/search_button"
+                android:layout_weight="1"
+                android:background="@drawable/signin_field"
+                android:singleLine="true"
+                android:layout_marginLeft="7px"
+                android:layout_marginBottom="3px"
+                android:layout_marginTop="4px"
+                android:padding="10dip" />
+
+            <Button
+                android:id="@+id/search_button"
+                android:text="@string/search"
+                android:textColor="#fff"
+                android:gravity="center"
+                android:layout_height="fill_parent"
+                android:layout_width="wrap_content"
+                android:layout_marginLeft="8px"
+                android:layout_marginRight="8px"
+                android:layout_marginBottom="9px"
+                android:layout_marginTop="7px"
+                android:paddingLeft="20px"
+                android:paddingRight="20px"
+                android:background="@drawable/blue_button" />
+        </LinearLayout>
+    </ViewFlipper>
+    <LinearLayout
+        android:id="@+id/list_container"
+        android:layout_below="@+id/ViewFlipper"
+        xmlns:android="http://schemas.android.com/apk/res/android"
+        android:orientation="vertical"
+        android:layout_width="fill_parent"
+        android:layout_height="fill_parent"
+        android:background="@drawable/back3">
 
 
-</LinearLayout>
+        <com.mp3tunes.android.FastScrollView
+            android:layout_width="fill_parent"
+            android:layout_height="fill_parent">
+            <ListView
+                android:id="@+id/android:list"
+                android:layout_width="fill_parent"
+                android:fadingEdgeLength="2.0dp"
+                android:layout_height="fill_parent" />
+
+            <TextView
+                android:id="@+id/android:empty"
+                android:layout_width="fill_parent"
+                android:layout_height="fill_parent"
+                android:text="" />
+        </com.mp3tunes.android.FastScrollView>
+    </LinearLayout>
+</RelativeLayout>
