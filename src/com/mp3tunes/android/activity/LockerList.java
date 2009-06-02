@@ -436,33 +436,6 @@ public class LockerList extends ListActivity
         }
 
     }
-    
-    private void playTrack( int track_id )
-    {
-        mDb.clearPlaylist();
-        mDb.insertTrackPlaylist( track_id );
-        System.out.println("playlist size: " + mDb.getPlaylistSize());
-        
-
-        try
-        {
-            if( MP3tunesApplication.getInstance().player != null ) 
-            {
-                MP3tunesApplication.getInstance().bindPlayerService();
-                MP3tunesApplication.getInstance().player.start();
-                Intent i = new Intent( LockerList.this, Player.class );
-                i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                startActivity( i );
-            } else
-                System.out.println("Player is null!");
-            
-        }
-        catch ( RemoteException e )
-        {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        }
-    }
 
     private void showSubMenu( int sense )
     {
@@ -817,7 +790,7 @@ public class LockerList extends ListActivity
             }
             try
             {
-                if(playlist_id > -1)
+                if(fetching_tracks)
                     mCursor = mDb.getTracksForPlaylist( playlist_id );
                 else
                     mCursor = mDb.getTableList( Music.Meta.PLAYLIST );
@@ -835,9 +808,16 @@ public class LockerList extends ListActivity
             // TODO error handling
 
             mPositionMenu = STATE.PLAYLISTS;
-            if(fetching_tracks)
-                handleListSwitch( 0, R.drawable.song_icon, 1, -1, R.drawable.right_play, null );
-            else
+            if( fetching_tracks )
+            {
+                mDb.clearPlaylist();
+                while( mCursor.moveToNext() ) 
+                {
+                    mDb.insertTrackPlaylist( mCursor.getInt( 0 ) );
+                }
+                showPlayer();
+//                handleListSwitch( 0, R.drawable.song_icon, 1, -1, R.drawable.right_play, null );
+            } else
                 handleListSwitch( 0, R.drawable.playlist_icon, 1, -1, R.drawable.right_play, null );
         }
     }
@@ -919,6 +899,35 @@ public class LockerList extends ListActivity
       }
   }
   
+  private void playTrack( int track_id )
+  {
+      mDb.clearPlaylist();
+      mDb.insertTrackPlaylist( track_id );
+      System.out.println("playlist size: " + mDb.getPlaylistSize());
+      showPlayer();
+  }
+  
+  private void showPlayer()
+  {
+      try
+      {
+          if( MP3tunesApplication.getInstance().player != null ) 
+          {
+              MP3tunesApplication.getInstance().bindPlayerService();
+              MP3tunesApplication.getInstance().player.start();
+              Intent i = new Intent( LockerList.this, Player.class );
+              i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+              startActivity( i );
+          } else
+              System.out.println("Player is null!");
+          
+      }
+      catch ( RemoteException e )
+      {
+          // TODO Auto-generated catch block
+          e.printStackTrace();
+      }
+  }
 
 }
 
