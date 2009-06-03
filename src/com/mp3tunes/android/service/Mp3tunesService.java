@@ -425,9 +425,6 @@ public class Mp3tunesService extends Service
     
     private String updateUrlSession( String url )
     {
-        
-        int beg = url.indexOf( "sid=" ) + 4;
-        int end = url.indexOf( "&", beg ); 
         String sid = mLocker.getCurrentSession().getSessionId();
         url = url.replaceFirst( "sid=(.*?)&", "sid="+sid+"&" );
         System.out.println("fixed url: " + url);
