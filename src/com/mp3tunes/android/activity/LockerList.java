@@ -228,8 +228,14 @@ public class LockerList extends ListActivity
     }
     
     @Override
+    protected void onPause() {
+        unregisterReceiver(mStatusListener);
+        super.onPause();
+    }
+    
+    @Override
     public void onResume() {
-//        registerReceiver( mStatusListener, mIntentFilter );
+        registerReceiver( mStatusListener, mIntentFilter );
         //We need to bind the player so we can see whether it's playing or not
         //in order to properly display the Now Playing indicator if we've been
         //relaunched after being killed.

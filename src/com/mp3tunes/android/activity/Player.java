@@ -126,13 +126,13 @@ public class Player extends Activity
         outState.putBoolean("configchange", getChangingConfigurations() != 0);
         super.onSaveInstanceState(outState);
     }
-
+*/
     @Override
     protected void onPause() {
         unregisterReceiver(mStatusListener);
         super.onPause();
     }
-    */
+    
     @Override
     public void onResume() {
         registerReceiver(mStatusListener, mIntentFilter);
