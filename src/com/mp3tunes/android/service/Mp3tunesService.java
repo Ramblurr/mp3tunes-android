@@ -27,10 +27,13 @@ import java.util.Stack;
 import java.util.Timer;
 import java.util.TimerTask;
 
+import com.binaryelysium.mp3tunes.api.Locker;
 import com.binaryelysium.mp3tunes.api.Track;
 import com.mp3tunes.android.LockerDb;
+import com.mp3tunes.android.MP3tunesApplication;
 import com.mp3tunes.android.Music;
 import com.mp3tunes.android.R;
+import com.mp3tunes.android.activity.Login;
 import com.mp3tunes.android.activity.Player;
 import com.mp3tunes.android.util.UserTask;
 
@@ -40,6 +43,7 @@ import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.media.MediaPlayer;
 import android.media.MediaPlayer.OnBufferingUpdateListener;
@@ -70,6 +74,7 @@ public class Mp3tunesService extends Service
     private int mShuffleMode = Music.ShuffleMode.NORMAL;
     private int mRepeatMode = Music.RepeatMode.NO_REPEAT;
     private int mBufferPercent;
+    private Locker mLocker;
     private int mServiceState = STATE.STOPPED;
     private Stack<Integer> mTrackHistory;
     
@@ -146,6 +151,8 @@ public class Mp3tunesService extends Service
         mTelephonyManager.listen( mPhoneStateListener, PhoneStateListener.LISTEN_CALL_STATE );
         
         mTrackHistory = new Stack<Integer>();
+        
+        mLocker = ( Locker ) MP3tunesApplication.getInstance().map.get( "mp3tunes_locker" );
         
         try
         // establish a connection with the database
@@ -335,27 +342,9 @@ public class Mp3tunesService extends Service
 
         public boolean onError( MediaPlayer mp, int what, int extra )
         {
-            if ( mAutoSkipCount++ > 4 )
-            {
-                // If we weren't able to start playing after 3 attempts, bail
-                // out and notify
-                // the user. This will bring us into a stopped state.
-                mServiceState = STATE.STOPPED;
-                notifyChange(PLAYBACK_ERROR);
-                mNm.cancel( NOTIFY_ID );
-                 if( mWakeLock.isHeld())
-                     mWakeLock.release();
-
-                if ( mWifiLock.isHeld() )
-                    mWifiLock.release();
-                mDeferredStopHandler.deferredStopSelf();
-            }
-            else
-            {
-                // Enter a state that will allow nextSong to do its thang
-                mServiceState = STATE.PREPARING;
-                new NextTrackTask().execute((Void)null);
-            }
+            new RefreshSessionTask().execute((Void)null);
+            // Likely it failed because the session is invalid so lets  
+            // get a new session.
             return true;
         }
     };
@@ -406,6 +395,7 @@ public class Mp3tunesService extends Service
             String url = track.getPlayUrl() + "&bitrate=" + bitrate;
             Log.i( "MP3tunes", "Streaming: " + url );
             p.reset();
+            url = updateUrlSession(url);
             p.setDataSource( url );
             p.setOnCompletionListener( mOnCompletionListener );
             p.setOnBufferingUpdateListener( mOnBufferingUpdateListener );
@@ -431,6 +421,17 @@ public class Mp3tunesService extends Service
         {
             Log.e( getString( R.string.app_name ), e.getMessage() );
         }
+    }
+    
+    private String updateUrlSession( String url )
+    {
+        
+        int beg = url.indexOf( "sid=" ) + 4;
+        int end = url.indexOf( "&", beg ); 
+        String sid = mLocker.getCurrentSession().getSessionId();
+        url = url.replaceFirst( "sid=(.*?)&", "sid="+sid+"&" );
+        System.out.println("fixed url: " + url);
+        return url;
     }
     
     private int chooseBitrate()
@@ -469,12 +470,14 @@ public class Mp3tunesService extends Service
     
     private void nextTrack()
     {
+        System.out.println("next track called");
         if(mServiceState == STATE.SKIPPING || mServiceState == STATE.STOPPED)
             return;
         
         mServiceState = STATE.SKIPPING;
         
         if(mNextMp != null) {
+            System.out.println("Next mp != null");
             mMp.stop();
             mMp = mNextMp;
             mNextMp = null;
@@ -497,7 +500,9 @@ public class Mp3tunesService extends Service
             //playTrack will check if mStopping is true, and stop us if the user has
             //pressed stop while we were fetching the playlist
             int pos = mCurrentPosition + 1;
-            Track track = mDb.getTrackPlaylist( pos); 
+            System.out.println("preparing next track");
+            Track track = mDb.getTrackPlaylist( pos);
+            System.out.println( "track: " + track.getTitle() + " by " + track.getArtistName() );
             playTrack( track, pos, mMp );
             notifyChange( META_CHANGED );
         }
@@ -506,8 +511,11 @@ public class Mp3tunesService extends Service
             // playlist finished
             notifyChange( PLAYBACK_FINISHED );
             mNm.cancel( NOTIFY_ID );
-            mWakeLock.release();
-            mWifiLock.release();
+            if( mWakeLock.isHeld() )
+                mWakeLock.release();
+
+           if ( mWifiLock.isHeld() )
+               mWifiLock.release();
         }
     }
     
@@ -883,6 +891,64 @@ public class Mp3tunesService extends Service
          * Task executer after timer finished working
          */
         public abstract void onPostExecute();
+    }
+    
+    private class RefreshSessionTask extends UserTask<Void, Void, Boolean> {
+
+        public void onPreExecute()
+        {}
+        public Boolean doInBackground(Void... input) {
+            boolean success = false;
+            try
+            {
+                SharedPreferences settings = getSharedPreferences( Login.PREFS, 0 );
+                String user = settings.getString( "mp3tunes_user", "" );
+                String pass = settings.getString( "mp3tunes_pass", "" );
+                if ( !user.equals( "" ) && !pass.equals( "" ) )
+                {
+                    mLocker.refreshSession( user, pass );
+                    success = true;
+                }
+            }
+            catch ( Exception e )
+            {
+                success = false;
+            }
+            return success;
+        }
+
+        @Override
+        public void onPostExecute(Boolean result) {
+            if(!result) {
+                notifyChange( PLAYBACK_ERROR );
+                mAutoSkipCount++;
+            }
+            if ( mAutoSkipCount++ > 4 )
+            {
+                // If we weren't able to start playing after 3 attempts, bail
+                // out and notify
+                // the user. This will bring us into a stopped state.
+                mServiceState = STATE.STOPPED;
+                notifyChange(PLAYBACK_ERROR);
+                mNm.cancel( NOTIFY_ID );
+                 if( mWakeLock.isHeld())
+                     mWakeLock.release();
+
+                if ( mWifiLock.isHeld() )
+                    mWifiLock.release();
+                mDeferredStopHandler.deferredStopSelf();
+            }
+            else
+            {
+
+                // restart the current track
+                mServiceState = STATE.STOPPED;
+                mMp.stop();
+                playTrack( mCurrentTrack, mCurrentPosition, mMp );
+                // Enter a state that will allow nextSong to do its thang
+//                new NextTrackTask().execute((Void)null);
+            }
+        }
     }
 
 }
