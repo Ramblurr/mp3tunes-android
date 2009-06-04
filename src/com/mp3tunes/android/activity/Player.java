@@ -53,7 +53,6 @@ public class Player extends Activity
     
     private long mDuration;
     private boolean paused;
-//    private ProgressDialog mProgressDialog;
     
     private Locker mLocker;
     private Worker mAlbumArtWorker;
@@ -110,7 +109,7 @@ public class Player extends Activity
         long next = refreshNow();
         queueNextRefresh(next);
     }
-    /*
+    
     @Override
     public void onStop() {
 
@@ -126,7 +125,7 @@ public class Player extends Activity
         outState.putBoolean("configchange", getChangingConfigurations() != 0);
         super.onSaveInstanceState(outState);
     }
-*/
+
     @Override
     protected void onPause() {
         unregisterReceiver(mStatusListener);
@@ -275,16 +274,16 @@ public class Player extends Activity
         }
     };
     
-    private void updateTrackInfo() {
+    private void updateTrackInfo() 
+    {
         try {
-            if (MP3tunesApplication.getInstance().player == null )
+            if (MP3tunesApplication.getInstance().player == null)
                 return;
-            if (!MP3tunesApplication.getInstance().player.isPlaying())
-                return;
-            String[] metadata = MP3tunesApplication.getInstance().player.getMetadata();
             
+            String[] metadata = MP3tunesApplication.getInstance().player.getMetadata();
             String artistName = metadata[2];
             String trackName = metadata[0];
+            
             if(artistName.equals(Mp3tunesService.UNKNOWN)) {
                 mArtistName.setText("");
             } else {

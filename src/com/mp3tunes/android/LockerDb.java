@@ -58,7 +58,7 @@ public class LockerDb
     private SQLiteDatabase mDb;
 
     private static final String DB_NAME = "locker.dat";
-    private static final int DB_VERSION = 6;
+    private static final int DB_VERSION = 1;
 
     public LockerDb( Context context, Locker locker )
     {

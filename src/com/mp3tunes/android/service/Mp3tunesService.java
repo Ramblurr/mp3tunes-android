@@ -687,9 +687,7 @@ public class Mp3tunesService extends Service
 
         public boolean isPlaying() throws RemoteException
         {
-            if ( mServiceState == STATE.PLAYING )
-                return true;
-            return false;
+            return mServiceState != STATE.STOPPED;
         }
 
         public void next() throws RemoteException
@@ -724,7 +722,7 @@ public class Mp3tunesService extends Service
         }
 
         public void start() throws RemoteException
-        {
+        { 
             if( mDb.getPlaylistSize() <= 0 )
                 throw new RemoteException();
             playTrack( mDb.getTrackPlaylist( 1 ), 1, mMp );
@@ -765,10 +763,11 @@ public class Mp3tunesService extends Service
        */
         public String[] getMetadata() throws RemoteException
         {
-            if ( mServiceState != STATE.PLAYING && mServiceState != STATE.PAUSED )
-                throw new RemoteException();
-
-            String[] data = { mCurrentTrack.getTitle(), Integer.toString( mCurrentTrack.getId() ), mCurrentTrack.getArtistName(), 
+            String[] data;
+            if( mCurrentTrack == null )
+                data = new String[] { UNKNOWN, UNKNOWN, UNKNOWN , UNKNOWN , UNKNOWN , UNKNOWN  };
+            else
+                data = new String[] { mCurrentTrack.getTitle(), Integer.toString( mCurrentTrack.getId() ), mCurrentTrack.getArtistName(), 
                     Integer.toString( mCurrentTrack.getArtistId() ), mCurrentTrack.getAlbumTitle(), Integer.toString(mCurrentTrack.getAlbumId() ) };
             
             return data;
