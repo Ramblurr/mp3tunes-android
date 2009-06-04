@@ -643,7 +643,7 @@ public class LockerDb
      */
     public Track getTrackPlaylist( int pos )
     {
-        Cursor c = mDb.query( "track, current_playlist", Music.TRACK, "current_playlist.pos=" + pos, null, null, null, null );
+        Cursor c = mDb.query( "track, current_playlist", Music.TRACK, "current_playlist.pos=" + pos+" AND track._id=current_playlist.track_id", null, null, null, null );
 //        Cursor c = mDb.rawQuery("SELECT play_url FROM song, current_playlist WHERE pos="+pos+" AND song._id=current_playlist.id", null);
         if ( !c.moveToFirst() )
         {
