@@ -168,10 +168,7 @@ public class Player extends Activity
                 return;
             try
             {
-                if( MP3tunesApplication.getInstance().player.isPlaying() )
-                    MP3tunesApplication.getInstance().player.pause();
-                else
-                    MP3tunesApplication.getInstance().player.start();
+                MP3tunesApplication.getInstance().player.pause();
             }
             catch ( RemoteException e )
             {
