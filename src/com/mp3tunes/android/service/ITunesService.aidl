@@ -60,7 +60,11 @@ interface ITunesService {
 	/* Returns the percentage the track has buffered */
 	int	   getBufferPercent();
 	
-	/* Returns true if a track is currently playing */
+	/* Returns true if a track is currently playing
+	 * however the player might be paused, or buffering.  */
 	boolean isPlaying();
+	
+	/* Returns true if a track is currently playing but paused */
+	boolean isPaused();
 	
 } 

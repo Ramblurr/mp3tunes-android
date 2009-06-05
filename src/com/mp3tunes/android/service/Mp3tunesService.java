@@ -547,15 +547,16 @@ public class Mp3tunesService extends Service
 //            notification.flags |= Notification.FLAG_ONGOING_EVENT;
             mNm.cancel( NOTIFY_ID );
             mNm.notify( NOTIFY_ID, notification );
-            notifyChange( PLAYBACK_STATE_CHANGED );
             mMp.pause();
             mServiceState = STATE.PAUSED;
+            notifyChange( PLAYBACK_STATE_CHANGED );
         }
         else
         {
             playingNotify();
             mMp.start();
             mServiceState = STATE.PLAYING;
+            notifyChange( PLAYBACK_STATE_CHANGED );
         }
     }
 
@@ -776,8 +777,13 @@ public class Mp3tunesService extends Service
         public String getArtUrl() throws RemoteException
         {
             if ( mServiceState != STATE.PLAYING && mServiceState != STATE.PAUSED )
-                throw new RemoteException();
+                return null;
             return mCurrentTrack.getAlbumArt(); 
+        }
+
+        public boolean isPaused() throws RemoteException
+        {
+            return mServiceState == STATE.PAUSED;   
         }
 
     };

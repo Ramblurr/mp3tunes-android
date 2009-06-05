@@ -1,20 +1,6 @@
 package com.mp3tunes.android.activity;
 
-import java.lang.annotation.Target;
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Formatter;
-
-import com.binaryelysium.mp3tunes.api.Album;
-import com.binaryelysium.mp3tunes.api.Locker;
-import com.binaryelysium.mp3tunes.api.Track;
-import com.mp3tunes.android.MP3tunesApplication;
-import com.mp3tunes.android.R;
-import com.mp3tunes.android.RemoteImageHandler;
-import com.mp3tunes.android.RemoteImageView;
-import com.mp3tunes.android.service.Mp3tunesService;
-import com.mp3tunes.android.util.UserTask;
-import com.mp3tunes.android.util.Worker;
 
 import android.app.Activity;
 import android.app.ProgressDialog;
@@ -32,6 +18,16 @@ import android.view.Window;
 import android.widget.ImageButton;
 import android.widget.ProgressBar;
 import android.widget.TextView;
+
+import com.binaryelysium.mp3tunes.api.Locker;
+import com.binaryelysium.mp3tunes.api.Track;
+import com.mp3tunes.android.MP3tunesApplication;
+import com.mp3tunes.android.R;
+import com.mp3tunes.android.RemoteImageHandler;
+import com.mp3tunes.android.RemoteImageView;
+import com.mp3tunes.android.service.Mp3tunesService;
+import com.mp3tunes.android.util.UserTask;
+import com.mp3tunes.android.util.Worker;
 
 
 public class Player extends Activity
@@ -181,13 +177,13 @@ public class Player extends Activity
     {
          try
         {
-            if ( MP3tunesApplication.getInstance().player != null && MP3tunesApplication.getInstance().player.isPlaying() )
+            if ( MP3tunesApplication.getInstance().player != null && MP3tunesApplication.getInstance().player.isPaused() )
             {
-                mPlayButton.setImageResource( R.drawable.pause_button );
+                mPlayButton.setImageResource( R.drawable.play_button );
             }
             else
             {
-                mPlayButton.setImageResource( R.drawable.play_button );
+                mPlayButton.setImageResource( R.drawable.pause_button );
             }
         }
         catch ( RemoteException ex )
