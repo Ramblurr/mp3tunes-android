@@ -109,6 +109,7 @@ public class Mp3tunesService extends Service
     }
     
     public static final String META_CHANGED = "com.mp3tunes.android.metachanged";
+    public static final String QUEUE_CHANGED = "com.mp3tunes.android.queuechanged";
     public static final String PLAYBACK_FINISHED = "com.mp3tunes.android.playbackcomplete";
     public static final String PLAYBACK_STATE_CHANGED = "com.mp3tunes.android.playstatechanged";
     public static final String PLAYBACK_ERROR = "com.mp3tunes.android.playbackerror";
@@ -325,12 +326,12 @@ public class Mp3tunesService extends Service
          if(mNextMp == null && percent == 100) 
          {
              // Check if we're running low on tracks
-             if(mDb.getPlaylistSize()  > mCurrentPosition ) 
+             if(mDb.getQueueSize()  > mCurrentPosition ) 
              {
                  mNextPrepared = false;
                  mNextMp = new MediaPlayer();
                  mNextPosition = mCurrentPosition + 1;
-                 mNextTrack = mDb.getTrackPlaylist( mNextPosition );
+                 mNextTrack = mDb.getTrackQueue( mNextPosition );
                  playTrack( mNextTrack, mNextPosition ,mNextMp );
              }
          }
@@ -425,6 +426,8 @@ public class Mp3tunesService extends Service
     
     private String updateUrlSession( String url )
     {
+        if( mLocker == null && mLocker.getCurrentSession() == null )
+            return url;
         String sid = mLocker.getCurrentSession().getSessionId();
         url = url.replaceFirst( "sid=(.*?)&", "sid="+sid+"&" );
         System.out.println("fixed url: " + url);
@@ -468,7 +471,7 @@ public class Mp3tunesService extends Service
     private void nextTrack()
     {
         System.out.println("next track called");
-        if(mServiceState == STATE.SKIPPING || mServiceState == STATE.STOPPED)
+        if(mServiceState == STATE.SKIPPING /*|| mServiceState == STATE.STOPPED*/)
             return;
         
         mServiceState = STATE.SKIPPING;
@@ -492,13 +495,13 @@ public class Mp3tunesService extends Service
         }
         
         // Check again, if size still == 0 then the playlist is empty.
-        if ( mDb.getPlaylistSize() > mCurrentPosition )
+        if ( mDb.getQueueSize() > mCurrentPosition )
         {
             //playTrack will check if mStopping is true, and stop us if the user has
             //pressed stop while we were fetching the playlist
             int pos = mCurrentPosition + 1;
             System.out.println("preparing next track");
-            Track track = mDb.getTrackPlaylist( pos);
+            Track track = mDb.getTrackQueue( pos);
             System.out.println( "track: " + track.getTitle() + " by " + track.getArtistName() );
             playTrack( track, pos, mMp );
             notifyChange( META_CHANGED );
@@ -724,17 +727,17 @@ public class Mp3tunesService extends Service
 
         public void start() throws RemoteException
         { 
-            if( mDb.getPlaylistSize() <= 0 )
+            if( mDb.getQueueSize() <= 0 )
                 throw new RemoteException();
-            playTrack( mDb.getTrackPlaylist( 1 ), 1, mMp );
+            playTrack( mDb.getTrackQueue( 1 ), 1, mMp );
             notifyChange( META_CHANGED );
         }
 
         public void startAt( int pos ) throws RemoteException
         {
-            if( mDb.getPlaylistSize() < pos )
+            if( mDb.getQueueSize() < pos )
                 throw new RemoteException();
-            playTrack( mDb.getTrackPlaylist( pos ), pos, mMp );
+            playTrack( mDb.getTrackQueue( pos ), pos, mMp );
             notifyChange( META_CHANGED );
             
         }
@@ -784,6 +787,36 @@ public class Mp3tunesService extends Service
         public boolean isPaused() throws RemoteException
         {
             return mServiceState == STATE.PAUSED;   
+        }
+
+        public int getQueuePosition() throws RemoteException
+        {
+            return mCurrentPosition;
+        }
+
+        public void moveQueueItem( int index1, int index2 ) throws RemoteException
+        {
+            mDb.moveQueueItem( index1++, index2++ ); // ++ because sqlite is 1 indexed
+            
+            if (mCurrentPosition == index1) {
+                mCurrentPosition = index2;
+            } else if (mCurrentPosition >= index1 && mCurrentPosition <= index2) {
+                mCurrentPosition--;
+            } else if (mCurrentPosition >= index2 && mCurrentPosition <= index1) {
+                mCurrentPosition++;
+            }
+            
+            notifyChange(QUEUE_CHANGED);
+        }
+
+        public int removeQueueItem( int first, int last ) throws RemoteException
+        {
+            int numremoved = mDb.removeQueueItem( first, last );
+            
+            if ( numremoved > 0 ) {
+                notifyChange(QUEUE_CHANGED);
+            }
+            return numremoved;
         }
 
     };

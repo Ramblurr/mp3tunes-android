@@ -61,6 +61,7 @@ public class Login extends Activity
         SharedPreferences settings = getSharedPreferences( PREFS, 0 );
         String user = settings.getString( "mp3tunes_user", "" );
         String pass = settings.getString( "mp3tunes_pass", "" );
+        System.out.println("user: " + user + " pass: " + pass);
         if ( !user.equals( "" ) && !pass.equals( "" ) )
         {
             try

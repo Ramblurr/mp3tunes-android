@@ -32,6 +32,7 @@ import com.mp3tunes.android.MP3tunesApplication;
 import com.mp3tunes.android.Music;
 import com.mp3tunes.android.R;
 import com.mp3tunes.android.LockerDb.DbSearchQuery;
+import com.mp3tunes.android.activity.QueueBrowser.TrackListAdapter;
 import com.mp3tunes.android.service.Mp3tunesService;
 import com.mp3tunes.android.util.UserTask;
 
@@ -39,12 +40,15 @@ import android.app.Dialog;
 import android.app.ListActivity;
 import android.app.ProgressDialog;
 import android.content.BroadcastReceiver;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.ServiceConnection;
 import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.os.Bundle;
+import android.os.IBinder;
 import android.os.RemoteException;
 import android.util.Log;
 import android.view.KeyEvent;
@@ -69,7 +73,7 @@ import android.widget.ViewFlipper;
  * @author ramblurr
  * 
  */
-public class LockerList extends ListActivity
+public class LockerList extends ListActivity implements ServiceConnection
 {
     private EditText mSearchField;
     private Button mSearchButton;
@@ -199,7 +203,7 @@ public class LockerList extends ListActivity
         mViewFlipper = ( ViewFlipper ) findViewById( R.id.ViewFlipper );
         
         getAlphabet(LockerList.this);
-        
+        Music.bindToService(this, this);
         displayMainMenu( TRANSLATION_LEFT );
     }
     
@@ -240,10 +244,17 @@ public class LockerList extends ListActivity
         //in order to properly display the Now Playing indicator if we've been
         //relaunched after being killed.
     
-        if(MP3tunesApplication.getInstance().player == null)
-            MP3tunesApplication.getInstance().bindPlayerService();
+        Music.bindToService(this, this);
         
         super.onResume();
+    }
+    
+    public void onServiceConnected(ComponentName name, IBinder service)
+    {
+    }
+    
+    public void onServiceDisconnected(ComponentName name) {
+//        finish();
     }
     
     private BroadcastReceiver mStatusListener = new BroadcastReceiver()
@@ -816,10 +827,11 @@ public class LockerList extends ListActivity
             mPositionMenu = STATE.PLAYLISTS;
             if( fetching_tracks )
             {
-                mDb.clearPlaylist();
+                mDb.clearQueue();
                 while( mCursor.moveToNext() ) 
                 {
-                    mDb.insertTrackPlaylist( mCursor.getInt( 0 ) );
+                    System.out.println("Got track id "+ mCursor.getInt( 0 ) + " called " + mCursor.getString( 1 )); 
+                    mDb.appendQueueItem( mCursor.getInt( 0 ) );
                 }
                 showPlayer();
 //                handleListSwitch( 0, R.drawable.song_icon, 1, -1, R.drawable.right_play, null );
@@ -907,9 +919,9 @@ public class LockerList extends ListActivity
   
   private void playTrack( int track_id )
   {
-      mDb.clearPlaylist();
-      mDb.insertTrackPlaylist( track_id );
-      System.out.println("playlist size: " + mDb.getPlaylistSize());
+      mDb.clearQueue();
+      mDb.appendQueueItem( track_id );
+      System.out.println("playlist size: " + mDb.getQueueSize());
       showPlayer();
   }
   
@@ -917,10 +929,9 @@ public class LockerList extends ListActivity
   {
       try
       {
-          if( MP3tunesApplication.getInstance().player != null ) 
+          if( Music.sService != null ) 
           {
-              MP3tunesApplication.getInstance().bindPlayerService();
-              MP3tunesApplication.getInstance().player.start();
+              Music.sService.start();
               Intent i = new Intent( LockerList.this, Player.class );
 //              i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
               startActivity( i );

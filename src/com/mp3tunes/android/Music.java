@@ -19,7 +19,20 @@
 ***************************************************************************/
 package com.mp3tunes.android;
 
+import java.util.HashMap;
+import java.util.Locale;
+import java.util.Formatter;
+
+import android.content.ComponentName;
+import android.content.Context;
+import android.content.Intent;
+import android.content.ServiceConnection;
+import android.os.IBinder;
+import android.util.Log;
+
 import com.mp3tunes.android.R;
+import com.mp3tunes.android.service.ITunesService;
+import com.mp3tunes.android.service.Mp3tunesService;
 
 /**
  * Simple static types and enums.
@@ -72,6 +85,8 @@ public class Music
         public static final int COVER_URL = 9;
     }
     
+    
+    
     public static final class RepeatMode {
         // each song will be played once
         public static final int NO_REPEAT = 0; 
@@ -98,5 +113,84 @@ public class Music
                 default : return R.string.shuffle_none;
             }
         }
+    }
+    
+    public static ITunesService sService = null;
+    private static HashMap<Context, ServiceBinder> sConnectionMap = new HashMap<Context, ServiceBinder>();
+    
+    public static boolean bindToService(Context context) {
+        return bindToService(context, null);
+    }
+
+    public static boolean bindToService(Context context, ServiceConnection callback) {
+        context.startService(new Intent(context, Mp3tunesService.class));
+        ServiceBinder sb = new ServiceBinder(callback);
+        sConnectionMap.put(context, sb);
+        return context.bindService((new Intent()).setClass(context,
+                Mp3tunesService.class), sb, 0);
+    }
+    
+    public static void unbindFromService(Context context) {
+        ServiceBinder sb = (ServiceBinder) sConnectionMap.remove(context);
+        if (sb == null) {
+            Log.e("MusicUtils", "Trying to unbind for unknown Context");
+            return;
+        }
+        context.unbindService(sb);
+        if (sConnectionMap.isEmpty()) {
+            // presumably there is nobody interested in the service at this point,
+            // so don't hang on to the ServiceConnection
+            sService = null;
+        }
+    }
+
+    private static class ServiceBinder implements ServiceConnection {
+        ServiceConnection mCallback;
+        ServiceBinder(ServiceConnection callback) {
+            mCallback = callback;
+        }
+        
+        public void onServiceConnected(ComponentName className, android.os.IBinder service) {
+            sService = ITunesService.Stub.asInterface(service);
+//            initAlbumArtCache();
+            if (mCallback != null) {
+                mCallback.onServiceConnected(className, service);
+            }
+        }
+        
+        public void onServiceDisconnected(ComponentName className) {
+            if (mCallback != null) {
+                mCallback.onServiceDisconnected(className);
+            }
+            sService = null;
+        }
+    }
+    
+    /*  Try to use String.format() as little as possible, because it creates a
+     *  new Formatter every time you call it, which is very inefficient.
+     *  Reusing an existing Formatter more than tripled the speed of
+     *  makeTimeString().
+     *  This Formatter/StringBuilder are also used by makeAlbumSongsLabel()
+     */
+    private static StringBuilder sFormatBuilder = new StringBuilder();
+    private static Formatter sFormatter = new Formatter(sFormatBuilder, Locale.getDefault());
+    private static final Object[] sTimeArgs = new Object[5];
+
+    public static String makeTimeString(Context context, long secs) {
+        String durationformat = context.getString(R.string.durationformat);
+        
+        /* Provide multiple arguments so the format can be changed easily
+         * by modifying the xml.
+         */
+        sFormatBuilder.setLength(0);
+
+        final Object[] timeArgs = sTimeArgs;
+        timeArgs[0] = secs / 3600;
+        timeArgs[1] = secs / 60;
+        timeArgs[2] = (secs / 60) % 60;
+        timeArgs[3] = secs;
+        timeArgs[4] = secs % 60;
+
+        return sFormatter.format(durationformat, timeArgs).toString();
     }
 }

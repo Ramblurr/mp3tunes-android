@@ -3,7 +3,8 @@
       package="com.mp3tunes.android"
       android:versionCode="1"
       android:versionName="1.0.0">
-     <uses-permission android:name="android.permission.INTERNET"></uses-permission>
+    <uses-sdk android:minSdkVersion="3" />
+    <uses-permission android:name="android.permission.INTERNET"></uses-permission>
 	<uses-permission android:name="android.permission.WAKE_LOCK"></uses-permission>
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" ></uses-permission>
     <application android:icon="@drawable/icon" android:label="@string/app_name" 
@@ -34,6 +35,14 @@
                   <category android:name="android.intent.category.DEFAULT"/>
               </intent-filter>
           </activity>
+          <activity android:name=".activity.QueueBrowser">
+            <intent-filter>
+                <action android:name="android.intent.action.EDIT" />
+                <action android:name="android.intent.action.PICK" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="vnd.mp3tunes.android.dir/track"/>
+            </intent-filter>
+        </activity>
         
 		<service android:name=".service.Mp3tunesService"  />
     </application>

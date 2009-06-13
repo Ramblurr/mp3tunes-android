@@ -5,12 +5,16 @@ import java.util.Formatter;
 import android.app.Activity;
 import android.app.ProgressDialog;
 import android.content.BroadcastReceiver;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.ServiceConnection;
 import android.graphics.Bitmap;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.IBinder;
 import android.os.Message;
 import android.os.RemoteException;
 import android.view.View;
@@ -22,6 +26,7 @@ import android.widget.TextView;
 import com.binaryelysium.mp3tunes.api.Locker;
 import com.binaryelysium.mp3tunes.api.Track;
 import com.mp3tunes.android.MP3tunesApplication;
+import com.mp3tunes.android.Music;
 import com.mp3tunes.android.R;
 import com.mp3tunes.android.RemoteImageHandler;
 import com.mp3tunes.android.RemoteImageView;
@@ -30,7 +35,7 @@ import com.mp3tunes.android.util.UserTask;
 import com.mp3tunes.android.util.Worker;
 
 
-public class Player extends Activity
+public class Player extends Activity implements ServiceConnection
 {
     protected static final int REFRESH = 0;
 
@@ -38,7 +43,7 @@ public class Player extends Activity
     private ImageButton mPlayButton;
     private ImageButton mStopButton;
     private ImageButton mNextButton;
-    private ImageButton mOntourButton;
+    private ImageButton mQueueButton;
     private RemoteImageView mAlbum;
     private TextView mCurrentTime;
     private TextView mTotalTime;
@@ -85,6 +90,9 @@ public class Player extends Activity
         mNextButton = ( ImageButton ) findViewById( R.id.fwd );
         mNextButton.setOnClickListener(mNextListener);
         
+        mQueueButton = ( ImageButton ) findViewById( R.id.playlist_button );
+        mQueueButton.setOnClickListener(mQueueListener);
+        
         mAlbumArtWorker = new Worker("album art worker");
         mAlbumArtHandler = new RemoteImageHandler(mAlbumArtWorker.getLooper(),
                 mHandler);
@@ -96,6 +104,7 @@ public class Player extends Activity
         mIntentFilter.addAction(Mp3tunesService.PLAYBACK_ERROR);
         mIntentFilter.addAction(Mp3tunesService.DATABASE_ERROR);
         updateTrackInfo();
+        Music.bindToService(this, this);
     }
     
     @Override
@@ -131,8 +140,7 @@ public class Player extends Activity
     @Override
     public void onResume() {
         registerReceiver(mStatusListener, mIntentFilter);
-        if (MP3tunesApplication.getInstance().player == null)
-            MP3tunesApplication.getInstance().bindPlayerService();
+        Music.bindToService(this, this);
         updateTrackInfo();
         setPauseButtonImage();
 
@@ -145,11 +153,19 @@ public class Player extends Activity
         super.onDestroy();
     }
     
+    public void onServiceConnected(ComponentName name, IBinder service)
+    {
+    }
+    
+    public void onServiceDisconnected(ComponentName name) {
+//        finish();
+    }
+    
     private View.OnClickListener mPrevListener = new View.OnClickListener() {
 
         public void onClick(View v) {
 
-            if (MP3tunesApplication.getInstance().player == null)
+            if (Music.sService == null)
                 return;
             // TODO Prev
         }
@@ -159,11 +175,11 @@ public class Player extends Activity
 
         public void onClick(View v) {
 
-            if (MP3tunesApplication.getInstance().player == null)
+            if (Music.sService== null)
                 return;
             try
             {
-                MP3tunesApplication.getInstance().player.pause();
+                Music.sService.pause();
             }
             catch ( RemoteException e )
             {
@@ -173,11 +189,23 @@ public class Player extends Activity
         }
     };
     
+    private View.OnClickListener mQueueListener = new View.OnClickListener() {
+
+        public void onClick(View v) 
+        {
+            startActivity(
+                    new Intent(Intent.ACTION_EDIT)
+                    .setDataAndType(Uri.EMPTY, "vnd.mp3tunes.android.dir/track")
+                    .putExtra("playlist", "nowplaying")
+            );
+        }
+    };
+    
     private void setPauseButtonImage()
     {
          try
         {
-            if ( MP3tunesApplication.getInstance().player != null && MP3tunesApplication.getInstance().player.isPaused() )
+            if ( Music.sService!= null && Music.sService.isPaused() )
             {
                 mPlayButton.setImageResource( R.drawable.play_button );
             }
@@ -196,11 +224,11 @@ public class Player extends Activity
 //
 //        public void onClick(View v) {
 //
-//            if (MP3tunesApplication.getInstance().player == null)
+//            if (Music.sService== null)
 //                return;
 //            try
 //            {
-//                MP3tunesApplication.getInstance().player.stop();
+//                Music.sService.stop();
 //            }
 //            catch ( RemoteException e )
 //            {
@@ -214,11 +242,11 @@ public class Player extends Activity
 
         public void onClick(View v) {
 
-            if (MP3tunesApplication.getInstance().player == null)
+            if (Music.sService== null)
                 return;
             try
             {
-                MP3tunesApplication.getInstance().player.next();
+                Music.sService.next();
             }
             catch ( RemoteException e )
             {
@@ -250,7 +278,7 @@ public class Player extends Activity
             } else if (action.equals(Mp3tunesService.PLAYBACK_ERROR)) {
                 // TODO add a skip counter and try to skip 3 times before
                 // display an error message
-                if (MP3tunesApplication.getInstance().player == null)
+                if (Music.sService== null)
                     return;
                 String error = null; // TODO pass some error messages?
                 if (error != null) {
@@ -273,10 +301,10 @@ public class Player extends Activity
     private void updateTrackInfo() 
     {
         try {
-            if (MP3tunesApplication.getInstance().player == null)
+            if (Music.sService== null)
                 return;
             
-            String[] metadata = MP3tunesApplication.getInstance().player.getMetadata();
+            String[] metadata = Music.sService.getMetadata();
             String artistName = metadata[2];
             String trackName = metadata[0];
             
@@ -291,7 +319,7 @@ public class Player extends Activity
                 mTrackName.setText(trackName);
             }
 
-            Bitmap art = MP3tunesApplication.getInstance().player.getAlbumArt();
+            Bitmap art = Music.sService.getAlbumArt();
             mAlbum.setArtwork( art );
             mAlbum.invalidate();
             if (art == null)
@@ -316,15 +344,15 @@ public class Player extends Activity
 
     private long refreshNow() {
 
-        if (MP3tunesApplication.getInstance().player == null)
+        if (Music.sService== null)
             return 500;
         try {
-            mDuration = MP3tunesApplication.getInstance().player.getDuration();
-            long pos = MP3tunesApplication.getInstance().player.getPosition();
+            mDuration = Music.sService.getDuration();
+            long pos = Music.sService.getPosition();
             long remaining = 1000 - (pos % 1000);
             if ((pos >= 0) && (mDuration > 0) && (pos <= mDuration)) {
-                mCurrentTime.setText(makeTimeString(this, pos / 1000));
-                mTotalTime.setText(makeTimeString(this, mDuration / 1000));
+                mCurrentTime.setText(Music.makeTimeString(this, pos / 1000));
+                mTotalTime.setText(Music.makeTimeString(this, mDuration / 1000));
                 mProgress.setProgress((int) (1000 * pos / mDuration));
                 if (mProgressDialog != null) {
                     mProgressDialog.dismiss();
@@ -335,7 +363,7 @@ public class Player extends Activity
                 mTotalTime.setText("--:--");
                 mProgress.setProgress(0);
                 if (mProgressDialog == null
-                        && MP3tunesApplication.getInstance().player.isPlaying()) {
+                        && Music.sService.isPlaying()) {
                     mProgressDialog = ProgressDialog.show(this, "",
                             "Buffering", true, false);
                     mProgressDialog
@@ -365,8 +393,8 @@ public class Player extends Activity
                     mAlbum.setArtwork((Bitmap) msg.obj);
                     mAlbum.invalidate();
                     try {
-                        if (MP3tunesApplication.getInstance().player != null)
-                            MP3tunesApplication.getInstance().player
+                        if (Music.sService!= null)
+                            Music.sService
                                     .setAlbumArt((Bitmap) msg.obj);
                     } catch (RemoteException e) {
                         e.printStackTrace();
@@ -378,12 +406,6 @@ public class Player extends Activity
             }
         }
     };
-    
-    public static String makeTimeString(Context context, long secs) 
-    {
-        return new Formatter().format("%02d:%02d", secs / 60, secs % 60)
-                .toString();
-    }
     
     private class LoadAlbumArtTask extends UserTask<Void, Void, Boolean> 
     {
@@ -397,9 +419,9 @@ public class Player extends Activity
         public Boolean doInBackground(Void... params) 
         {
             try {
-                if (MP3tunesApplication.getInstance().player != null) {
-                    artUrl = MP3tunesApplication.getInstance().player.getArtUrl();
-                    String[] metadata = MP3tunesApplication.getInstance().player.getMetadata();
+                if (Music.sService!= null) {
+                    artUrl = Music.sService.getArtUrl();
+                    String[] metadata = Music.sService.getMetadata();
                     int track_id = Integer.parseInt( metadata[1] );
                     Track[] tracks = mLocker.getTracksForAlbum( Integer.parseInt( metadata[5] ) ).getData();
                     // TODO maybe a better way to do this. probably cache it in the database

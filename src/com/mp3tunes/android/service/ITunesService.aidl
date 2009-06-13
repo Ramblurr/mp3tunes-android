@@ -66,5 +66,10 @@ interface ITunesService {
 	
 	/* Returns true if a track is currently playing but paused */
 	boolean isPaused();
+
+	int getQueuePosition();
+	void moveQueueItem(int index1, int index2);
+	int removeQueueItem(int first, int last);
+	
 	
 } 
