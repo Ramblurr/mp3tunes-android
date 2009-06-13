@@ -2,5 +2,6 @@
 <resources>
         <color name="mp3tunesblue">#ff434b58</color>
         <color name="mp3tunesgreen">#ffafc729</color>
+        <color name="dragndrop_background">#e0103010</color>
 </resources>
 

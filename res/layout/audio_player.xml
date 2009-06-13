@@ -1,98 +1,162 @@
 <?xml version="1.0" encoding="utf-8"?>
-	<!--
-		Copyright (C) 2008 Casey Link <unnamedrambler@gmail.com>
-		Copyright (C) 2008 Lukasz Wisniewski <luke.cherrish@gmail.com>
-		Copyright (C) 2007 The Android Open Source Project Licensed under the Apache
-		
-		License, Version 2.0 (the "License"); you may not use this file except
-		in compliance with the License. You may obtain a copy of the License
-		at http://www.apache.org/licenses/LICENSE-2.0 Unless required by
-		applicable law or agreed to in writing, software distributed under the
-		License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
-		CONDITIONS OF ANY KIND, either express or implied. See the License for
-		the specific language governing permissions and limitations under the
-		License.
-	-->
+    <!--
+        Copyright (C) 2008 Casey Link <unnamedrambler@gmail.com>
+        Copyright (C) 2008 Lukasz Wisniewski <luke.cherrish@gmail.com>
+        Copyright (C) 2007 The Android Open Source Project Licensed
+        under the Apache License, Version 2.0 (the "License"); you may
+        not use this file except in compliance with the License. You may
+        obtain a copy of the License at
+        http://www.apache.org/licenses/LICENSE-2.0 Unless required by
+        applicable law or agreed to in writing, software distributed
+        under the License is distributed on an "AS IS" BASIS, WITHOUT
+        WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+        See the License for the specific language governing permissions
+        and limitations under the License.
+    -->
 
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-	android:layout_width="fill_parent" android:layout_height="fill_parent"
-	android:orientation="vertical" android:background="#000">
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"
+    android:orientation="vertical"
+    android:background="#000">
 
 
-		<!-- Playback view -->
-		<RelativeLayout android:layout_width="fill_parent"
-			android:layout_height="fill_parent"
-			xmlns:tunes="http://schemas.android.com/apk/res/com.mp3tunes.android">
+    <!-- Playback view -->
+    <RelativeLayout
+        android:layout_width="fill_parent"
+        android:layout_height="fill_parent"
+        xmlns:tunes="http://schemas.android.com/apk/res/com.mp3tunes.android">
+        <com.mp3tunes.android.RemoteImageView
+            android:id="@+id/album"
+            tunes:unknownImage="@+drawable/no_artwork_portrait"
+            android:background="@drawable/no_artwork_portrait"
+            android:gravity="center"
+            android:layout_alignParentTop="true"
+            android:layout_marginTop="10dip"
+            android:layout_centerHorizontal="true"
+            android:layout_height="300px"
+            android:layout_width="300px" />
 
-			<com.mp3tunes.android.RemoteImageView
-				android:id="@+id/album" tunes:unknownImage="@+drawable/no_artwork"
-				android:background="@drawable/no_artwork" android:gravity="center"
-				android:layout_alignParentTop="true" android:layout_marginTop="10px"
-				android:layout_centerHorizontal="true" android:layout_height="300px" 
-				android:layout_width="300px"/>
+        <TableLayout
+            android:id="@+id/track_metadata"
+            android:layout_height="wrap_content"
+            android:layout_width="fill_parent"
+            android:layout_centerHorizontal="true"
+            android:layout_below="@id/album"
+            android:layout_marginBottom="6px"
+            android:gravity="center">
 
-			<LinearLayout android:id="@+id/playback_controls"
-				android:orientation="horizontal" android:layout_gravity="bottom"
-				android:layout_marginTop="0px" android:layout_height="50px"
-				android:layout_width="fill_parent" android:gravity="center"
-				android:layout_alignParentBottom="true">
+            <TableRow
+                android:layout_height="wrap_content"
+                android:layout_width="fill_parent"
+                android:layout_gravity="center"
+                android:gravity="center">
 
-				<ImageButton android:id="@+id/rew" style="@+style/TunesButton.Rew" />
-				<ImageButton android:id="@+id/play" style="@+style/TunesButton.PlayPause" />
-<!--				<ImageButton android:id="@+id/stop" style="@+style/TunesButton.Stop" />-->
-				<ImageButton android:id="@+id/fwd" style="@+style/TunesButton.Fwd" />
+                <TextView
+                    android:id="@+id/track_artist"
+                    style="@style/playback_info"
+                    android:layout_height="wrap_content"
+                    android:layout_width="fill_parent"
+                    android:layout_gravity="center"
+                    android:gravity="center"
+                    android:maxWidth="300dip" />
+            </TableRow>
 
-			</LinearLayout>
+            <TableRow
+                android:layout_height="wrap_content"
+                android:layout_width="fill_parent"
+                android:gravity="center">
 
-			<TableLayout android:id="@+id/track_metadata"
-				android:layout_height="wrap_content" android:layout_width="fill_parent"
-				android:layout_centerHorizontal="true"
-				android:layout_above="@id/playback_controls" android:layout_marginBottom="6px" android:gravity="center">
+                <TextView
+                    android:id="@+id/track_title"
+                    style="@style/playback_info"
+                    android:layout_height="wrap_content"
+                    android:layout_width="fill_parent"
+                    android:layout_gravity="center"
+                    android:gravity="center"
+                    android:maxWidth="300dip" />
+            </TableRow>
 
-				<TableRow android:layout_height="wrap_content"
-					android:layout_width="fill_parent" android:layout_gravity="center"
-					android:gravity="center">
+            <TableRow
+                android:layout_width="fill_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:layout_marginTop="4px">
 
-					<TextView android:id="@+id/track_artist" style="@style/playback_info"
-						android:layout_height="wrap_content" android:layout_width="fill_parent"
-						android:layout_gravity="center" android:gravity="center" android:maxWidth="300dip"/>
-				</TableRow>
+                <LinearLayout
+                    android:layout_width="fill_parent"
+                    android:layout_height="wrap_content">
 
-				<TableRow android:layout_height="wrap_content"
-					android:layout_width="fill_parent" android:gravity="center">
+                    <TextView
+                        android:id="@+id/currenttime"
+                        style="@style/playback_time"
+                        android:layout_gravity="bottom"
+                        android:layout_height="wrap_content"
+                        android:layout_width="48dip"
+                        android:gravity="right"
+                        android:text="--:--" />
 
-					<TextView android:id="@+id/track_title" style="@style/playback_info"
-						android:layout_height="wrap_content" android:layout_width="fill_parent"
-						android:layout_gravity="center" android:gravity="center" android:maxWidth="300dip"/>
-				</TableRow>
+                    <ProgressBar
+                        android:id="@android:id/progress"
+                        android:background="#000"
+                        android:layout_height="8px"
+                        android:paddingLeft="5px"
+                        android:paddingRight="5px"
+                        android:layout_marginLeft="5px"
+                        android:layout_marginRight="5px"
+                        android:indeterminateOnly="false"
+                        android:progressDrawable="@+drawable/progress_horizontal"
+                        android:layout_width="200dip"
+                        android:layout_gravity="center_vertical" />
 
-				<TableRow android:layout_width="fill_parent"
-					android:layout_height="wrap_content" android:gravity="center"
-					android:layout_marginTop="4px">
+                    <TextView
+                        android:id="@+id/totaltime"
+                        style="@style/playback_time"
+                        android:layout_gravity="bottom"
+                        android:layout_height="wrap_content"
+                        android:layout_width="48dip"
+                        android:gravity="left"
+                        android:text="--:--" />
 
-					<LinearLayout android:layout_width="fill_parent"
-						android:layout_height="wrap_content">
+                </LinearLayout>
+            </TableRow>
+        </TableLayout>
 
-						<TextView android:id="@+id/currenttime" style="@style/playback_time"
-							android:layout_gravity="bottom"
-							android:layout_height="wrap_content" android:layout_width="48dip"
-							android:gravity="right" android:text="--:--"/>
+        <LinearLayout
+            android:id="@+id/playback_controls"
+            android:orientation="horizontal"
+            android:layout_gravity="bottom"
+            android:layout_height="wrap_content"
+            android:layout_width="fill_parent"
+            android:paddingTop="5dip"
+            android:paddingBottom="5dip"
+            android:gravity="center"
+            android:layout_alignParentBottom="true"
+            android:background="@drawable/tab_bar_rest"
+            android:layout_below="@id/track_metadata">
 
-						<ProgressBar android:id="@android:id/progress"
-							android:background="#000" android:layout_height="8px"
-							android:paddingLeft="5px" android:paddingRight="5px"
-							android:layout_marginLeft="5px" android:layout_marginRight="5px"
-							android:indeterminateOnly="false" android:progressDrawable="@+drawable/progress_horizontal"
-							android:layout_width="200dip" android:layout_gravity="center_vertical" />
+            <ImageButton
+                android:id="@+id/rew"
+                style="@+style/TunesButton.Rew" />
+            <ImageButton
+                android:id="@+id/play"
+                style="@+style/TunesButton.PlayPause" />
+            <!--
+                <ImageButton android:id="@+id/stop"
+                style="@+style/TunesButton.Stop" />
+            -->
+            <ImageButton
+                android:id="@+id/fwd"
+                style="@+style/TunesButton.Fwd" />
 
-						<TextView android:id="@+id/totaltime" style="@style/playback_time"
-							android:layout_gravity="bottom"
-							android:layout_height="wrap_content" android:layout_width="48dip"
-							android:gravity="left" android:text="--:--"/>
+            <ImageButton
+                android:id="@+id/playlist_button"
+                style="@+style/TunesButton.Playlist"
+                android:layout_height="wrap_content"
+                android:layout_width="wrap_content" />
 
-					</LinearLayout>
-				</TableRow>
-			</TableLayout>
-		</RelativeLayout>
+        </LinearLayout>
+    </RelativeLayout>
 
 </LinearLayout>
