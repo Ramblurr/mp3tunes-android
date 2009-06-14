@@ -72,7 +72,7 @@ public class LockerDb
         mLocker = locker;
         mContext = context;
         long lastupdate = MP3tunesApplication.getInstance().getLastUpdate();
-        mCache = new LockerCache( lastupdate, 8640000 ); // TODO handle
+        mCache = new LockerCache( lastupdate, 86400000 ); // 1 day // TODO handle
         // cache timeout
         // properly
     }
