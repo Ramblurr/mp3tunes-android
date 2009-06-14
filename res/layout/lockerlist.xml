@@ -94,14 +94,11 @@
         android:layout_height="fill_parent"
         android:background="@drawable/back3">
 
-
-        <com.mp3tunes.android.FastScrollView
-            android:layout_width="fill_parent"
-            android:layout_height="fill_parent">
             <ListView
                 android:id="@+id/android:list"
                 android:layout_width="fill_parent"
                 android:fadingEdgeLength="2.0dp"
+                android:fastScrollEnabled="true"
                 android:layout_height="fill_parent" />
 
             <TextView
@@ -109,6 +106,5 @@
                 android:layout_width="fill_parent"
                 android:layout_height="fill_parent"
                 android:text="" />
-        </com.mp3tunes.android.FastScrollView>
     </LinearLayout>
 </RelativeLayout>

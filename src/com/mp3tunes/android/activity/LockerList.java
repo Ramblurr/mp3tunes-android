@@ -210,8 +210,6 @@ public class LockerList extends ListActivity implements ServiceConnection
     @Override
     protected void onSaveInstanceState( Bundle outState )
     {
-//        outState.putParcelable( "cursor", mCursor );
-//        outState.putSerializable( "cursor", mCursor );
         //TODO save state
     }
     

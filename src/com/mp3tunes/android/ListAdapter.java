@@ -34,6 +34,7 @@ import android.view.ViewGroup;
 import android.widget.AbsListView;
 import android.widget.BaseAdapter;
 import android.widget.ImageView;
+import android.widget.SectionIndexer;
 import android.widget.TextView;
 import android.widget.ViewSwitcher;
 
@@ -55,7 +56,7 @@ import java.io.Serializable;
  * @author Lukasz Wisniewski
  * @author Casey Link
  */
-public class ListAdapter extends BaseAdapter implements Serializable, ImageDownloaderListener, FastScrollView.SectionIndexer {
+public class ListAdapter extends BaseAdapter implements Serializable, ImageDownloaderListener, SectionIndexer {
 
         private static final long serialVersionUID = -4219322831181525818L;
         protected transient ImageCache mImageCache;
