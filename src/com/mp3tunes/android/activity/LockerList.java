@@ -833,6 +833,7 @@ public class LockerList extends ListActivity implements ServiceConnection
                     System.out.println("Got track id "+ mCursor.getInt( 0 ) + " called " + mCursor.getString( 1 )); 
                     mDb.appendQueueItem( mCursor.getInt( 0 ) );
                 }
+                ((ListAdapter) getListAdapter()).disableLoadBar();
                 showPlayer();
 //                handleListSwitch( 0, R.drawable.song_icon, 1, -1, R.drawable.right_play, null );
             } else
