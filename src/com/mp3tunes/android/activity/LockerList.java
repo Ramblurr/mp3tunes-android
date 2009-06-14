@@ -62,6 +62,7 @@ import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.TextView;
@@ -78,6 +79,7 @@ public class LockerList extends ListActivity implements ServiceConnection
     private EditText mSearchField;
     private Button mSearchButton;
     private TextView mHeaderText;
+    private ImageButton mHeaderIcon;
     private LinearLayout mSearchBar;
     private LinearLayout mMainHeader;
     private ViewFlipper mViewFlipper;
@@ -198,6 +200,7 @@ public class LockerList extends ListActivity implements ServiceConnection
         mSearchButton = ( Button ) findViewById( R.id.search_button );
         mSearchButton.setOnClickListener( mSearchListener );
         mHeaderText = ( TextView ) findViewById( R.id.header_text );
+        mHeaderIcon = ( ImageButton ) findViewById( R.id.header_icon );
         mSearchBar = ( LinearLayout ) findViewById( R.id.SearchBar );
         mMainHeader = ( LinearLayout ) findViewById( R.id.main_header );
         mViewFlipper = ( ViewFlipper ) findViewById( R.id.ViewFlipper );
@@ -331,20 +334,13 @@ public class LockerList extends ListActivity implements ServiceConnection
     {
         if( mViewFlipper.getDisplayedChild() == 0 )
         {
-//            performSlide( TRANSLATION_RIGHT );
             mViewFlipper.setDisplayedChild( 1 );
-//            mViewFlipper.setInAnimation( mRTLanim );
-//            mViewFlipper.setOutAnimation( mLTRanim );
             getListView().setVisibility( View.INVISIBLE );
             
         } else {
-//            performSlide( TRANSLATION_LEFT );
             mViewFlipper.setDisplayedChild( 0 );
-//            mViewFlipper.setInAnimation( mLTRanim );
-//            mViewFlipper.setOutAnimation( mRTLanim );
             getListView().setVisibility( View.VISIBLE );
         }
-            
     }
     
     OnClickListener mSearchListener = new OnClickListener()
