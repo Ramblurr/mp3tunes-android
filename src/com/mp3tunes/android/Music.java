@@ -56,6 +56,13 @@ public class Music
     
     public static String[] ALBUM  = { "_id","album_name", "artist_id", "artist_name", "track_count", "cover_url" };
 
+  //This mapping corresponds to the field indexes above
+    public static final class ARTIST_MAPPING 
+    {
+        public static final int ID = 0;
+        public static final int ARTIST_NAME = 1;
+    }
+    
     //This mapping corresponds to the field indexes above
     public static final class ALBUM_MAPPING 
     {
