@@ -11,6 +11,7 @@
     <string name="menu_settings">Settings</string>
     
     <string name="title_nowplaying">Now Playing</string>
+    <string name="title_tracks">Songs</string>
 	
 	<string name="artists">Artists</string>
 	<string name="albums">Albums</string>

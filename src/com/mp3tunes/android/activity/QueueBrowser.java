@@ -436,10 +436,12 @@ public class QueueBrowser extends ListActivity implements View.OnCreateContextMe
          * Long.valueOf(mGenre)), cols, null, null, null); if (cursor != null) {
          * if (cursor.getCount() != 0) { cursor.moveToFirst(); fancyName =
          * cursor.getString(0); } cursor.deactivate(); } }
-         * 
-         * if (fancyName != null) { setTitle(fancyName); } else {
-         * setTitle(R.string.tracks_title); }
          */
+         if (fancyName != null)
+             setTitle(fancyName);
+         else
+             setTitle(R.string.title_tracks);
+         
     }
 
     public void moveQueueItem( int from, int to )
