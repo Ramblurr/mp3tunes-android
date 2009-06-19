@@ -19,17 +19,23 @@
 ***************************************************************************/
 package com.mp3tunes.android;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Formatter;
 
+import android.app.Activity;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.content.res.Resources;
 import android.os.IBinder;
+import android.os.RemoteException;
 import android.util.Log;
+import android.view.Window;
 
+import com.binaryelysium.mp3tunes.api.Locker;
 import com.mp3tunes.android.R;
 import com.mp3tunes.android.service.ITunesService;
 import com.mp3tunes.android.service.Mp3tunesService;
@@ -120,6 +126,41 @@ public class Music
                 default : return R.string.shuffle_none;
             }
         }
+    }
+    
+    public static LockerDb sDb = null;
+    private static ArrayList<Context> sDbConnectionMap = new ArrayList<Context>();
+    public static boolean connectToDb( Context context )
+    {
+        if( sDb == null ) {
+            Locker locker = ( Locker ) MP3tunesApplication.getInstance().map.get( "mp3tunes_locker" );
+            if(locker == null)
+                return false;
+            try
+            // establish a connection with the database
+            {
+                System.out.println("on create getting db");
+                sDb = new LockerDb( context.getApplicationContext(), locker );
+            }
+            catch ( Exception ex )
+            {
+                // database connection failed.
+                // Show an error and exit gracefully.
+                System.out.println( ex.getMessage() );
+                ex.printStackTrace();
+                return false;
+            }
+        }
+        sDbConnectionMap.add( context );
+        return true;
+    }
+    
+    public static boolean unconnectFromDb( Context context )
+    {
+        boolean res = sDbConnectionMap.remove( context );
+        if( sDbConnectionMap.isEmpty() )
+            sDb.close();
+        return res;
     }
     
     public static ITunesService sService = null;

@@ -87,11 +87,6 @@ public class LockerList extends ListActivity implements ServiceConnection
     // the database cursor
     private Cursor mCursor = null;
 
-    private Locker mLocker;
-
-    // the cached database
-    private LockerDb mDb;
-
     // id List for main menu
     private static final int[] mMainOpts = { R.string.artists, R.string.albums, R.string.tracks,
             R.string.playlists, R.string.search };
@@ -163,10 +158,6 @@ public class LockerList extends ListActivity implements ServiceConnection
         requestWindowFeature( Window.FEATURE_NO_TITLE );
         setContentView( R.layout.lockerlist );
 
-        mLocker = ( Locker ) MP3tunesApplication.getInstance().map.get( "mp3tunes_locker" );
-        if ( mLocker == null )
-            logout();
-
         mLTRanim = AnimationUtils.loadAnimation( this, R.anim.ltrtranslation );
         mRTLanim = AnimationUtils.loadAnimation( this, R.anim.rtltranslation );
 
@@ -174,22 +165,9 @@ public class LockerList extends ListActivity implements ServiceConnection
         // animations run
         getListView().setAnimationCacheEnabled( false );
 
-        try
-        {
-            // establish a connection with the database
-            mDb = new LockerDb( this, mLocker );
-
-        }
-        catch ( Exception ex )
-        {
-            // database connection failed.
-            // Show an error and exit gracefully.
-            System.out.println( ex.getMessage() );
-            ex.printStackTrace();
-            MP3tunesApplication.getInstance().presentError( getApplicationContext(), "a", "" );
-            logout();
-        }
-
+        if(! Music.connectToDb( this ) )
+            logout(); //TODO show error
+        
         mHistory = new Stack<HistoryUnit>();
 
         mIntentFilter = new IntentFilter();
@@ -227,7 +205,7 @@ public class LockerList extends ListActivity implements ServiceConnection
     {
         if ( mCursor != null )
             mCursor.close();
-        mDb.close();
+        Music.unconnectFromDb( this );
 
         super.onDestroy();
     }
@@ -403,7 +381,6 @@ public class LockerList extends ListActivity implements ServiceConnection
 
             if ( mPositionMenu == STATE.ARTIST )
             { // Going to album list
-                
                 ListAdapter a = ( ListAdapter ) getListAdapter();
                 int artist_id = ( Integer ) a.getItem( pos );
                 new FetchAlbumsTask().execute( TRANSLATION_LEFT, artist_id );
@@ -588,8 +565,8 @@ public class LockerList extends ListActivity implements ServiceConnection
         editor.remove( "mp3tunes_pass" );
         editor.commit();
         MP3tunesApplication.getInstance().clearUpdate();
-        mDb.clearDB();
-        mDb.close();
+        Music.sDb.clearDB();
+        Music.unconnectFromDb( this );
     }
 
     protected Dialog onCreateDialog( int id )
@@ -622,7 +599,7 @@ public class LockerList extends ListActivity implements ServiceConnection
         {
             try
             {
-//                mDb.refreshTrCache();
+//                Music.sDb.refreshTrCache();
             }
             catch ( Exception e )
             {
@@ -664,8 +641,8 @@ public class LockerList extends ListActivity implements ServiceConnection
             sense = params[0];
             try
             {
-                mCursor = mDb.getTableList( Music.Meta.ARTIST );
-                Token[] t = mDb.getTokens( Music.Meta.ARTIST );
+                mCursor = Music.sDb.getTableList( Music.Meta.ARTIST );
+                Token[] t = Music.sDb.getTokens( Music.Meta.ARTIST );
                 tokens = LockerDb.tokensToString( t );
             }
             catch ( Exception e )
@@ -713,11 +690,11 @@ public class LockerList extends ListActivity implements ServiceConnection
             try
             {
                 if(artist_id > -1)
-                    mCursor = mDb.getAlbumsForArtist( artist_id );
+                    mCursor = Music.sDb.getAlbumsForArtist( artist_id );
                 else
-                    mCursor = mDb.getTableList( Music.Meta.ALBUM );
+                    mCursor = Music.sDb.getTableList( Music.Meta.ALBUM );
                 
-                Token[] t = mDb.getTokens( Music.Meta.ALBUM );
+                Token[] t = Music.sDb.getTokens( Music.Meta.ALBUM );
                 tokens = LockerDb.tokensToString( t );
             }
             catch ( Exception e )
@@ -757,11 +734,11 @@ public class LockerList extends ListActivity implements ServiceConnection
             try
             {
                 if(album_id > -1)
-                    mCursor = mDb.getTracksForAlbum( album_id );
+                    mCursor = Music.sDb.getTracksForAlbum( album_id );
                 else
-                    mCursor = mDb.getTableList( Music.Meta.TRACK );
+                    mCursor = Music.sDb.getTableList( Music.Meta.TRACK );
                 
-                Token[] t = mDb.getTokens( Music.Meta.TRACK );
+                Token[] t = Music.sDb.getTokens( Music.Meta.TRACK );
                 tokens = LockerDb.tokensToString( t );
             }
             catch ( Exception e )
@@ -802,9 +779,9 @@ public class LockerList extends ListActivity implements ServiceConnection
             try
             {
                 if(fetching_tracks)
-                    mCursor = mDb.getTracksForPlaylist( playlist_id );
+                    mCursor = Music.sDb.getTracksForPlaylist( playlist_id );
                 else
-                    mCursor = mDb.getTableList( Music.Meta.PLAYLIST );
+                    mCursor = Music.sDb.getTableList( Music.Meta.PLAYLIST );
             }
             catch ( Exception e )
             {
@@ -821,11 +798,11 @@ public class LockerList extends ListActivity implements ServiceConnection
             mPositionMenu = STATE.PLAYLISTS;
             if( fetching_tracks )
             {
-                mDb.clearQueue();
+                Music.sDb.clearQueue();
                 while( mCursor.moveToNext() ) 
                 {
                     System.out.println("Got track id "+ mCursor.getInt( 0 ) + " called " + mCursor.getString( 1 )); 
-                    mDb.appendQueueItem( mCursor.getInt( 0 ) );
+                    Music.sDb.appendQueueItem( mCursor.getInt( 0 ) );
                 }
                 ((ListAdapter) getListAdapter()).disableLoadBar();
                 showPlayer();
@@ -851,7 +828,7 @@ public class LockerList extends ListActivity implements ServiceConnection
         {
             try
             {
-                res = mDb.search( mDb.new DbSearchQuery( params[0], true, false, true ) );
+                res = Music.sDb.search( Music.sDb.new DbSearchQuery( params[0], true, false, true ) );
                 
             }
             catch ( Exception e )
@@ -914,9 +891,9 @@ public class LockerList extends ListActivity implements ServiceConnection
   
   private void playTrack( int track_id )
   {
-      mDb.clearQueue();
-      mDb.appendQueueItem( track_id );
-      System.out.println("playlist size: " + mDb.getQueueSize());
+      Music.sDb.clearQueue();
+      Music.sDb.appendQueueItem( track_id );
+      System.out.println("playlist size: " + Music.sDb.getQueueSize());
       showPlayer();
   }
   
