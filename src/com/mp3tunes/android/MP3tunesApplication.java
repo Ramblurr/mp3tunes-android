@@ -23,6 +23,9 @@ package com.mp3tunes.android;
 
 import java.util.WeakHashMap;
 
+import com.tomgibara.android.veecheck.Veecheck;
+import com.tomgibara.android.veecheck.util.PrefSettings;
+
 import android.app.AlertDialog;
 import android.app.Application;
 import android.content.ComponentName;
@@ -31,6 +34,7 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.content.SharedPreferences;
+import android.content.SharedPreferences.Editor;
 import android.os.IBinder;
 
 
@@ -57,6 +61,22 @@ public class MP3tunesApplication extends Application
         instance = this;
 
         this.map = new WeakHashMap();
+        
+        SharedPreferences prefs = PrefSettings.getSharedPrefs(this);
+        //assign some default settings if necessary
+        if (prefs.getString(PrefSettings.KEY_CHECK_URI, null) == null) {
+            Editor editor = prefs.edit();
+            editor.putBoolean(PrefSettings.KEY_ENABLED, true);
+            editor.putLong(PrefSettings.KEY_PERIOD, 24 * 60 * 60 * 1000);
+            editor.putLong(PrefSettings.KEY_CHECK_INTERVAL, 3 * 24 * 60 * 60 * 1000L);
+//            editor.putLong(PrefSettings.KEY_PERIOD, 15 * 1000L);
+//            editor.putLong(PrefSettings.KEY_CHECK_INTERVAL, 30 * 1000L);
+            editor.putString(PrefSettings.KEY_CHECK_URI, "http://www.binaryelysium.com/code/mp3tunes-update.xml");
+            editor.commit();
+        }
+        System.out.println("Doing reschedule");
+        Intent intent = new Intent(Veecheck.getRescheduleAction(this));
+        sendBroadcast(intent);
     }    
 
 

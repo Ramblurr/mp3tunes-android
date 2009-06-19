@@ -43,7 +43,29 @@
                 <data android:mimeType="vnd.mp3tunes.android.dir/track"/>
             </intent-filter>
         </activity>
+        <activity android:name=".activity.UpdateActivity" android:label="@string/update_confirm_title">
+        </activity>
+        <receiver android:name=".util.UpdateReceiver">
+            <intent-filter>
+                <action
+                    android:name="com.mp3tunes.android.VEECHECK_RESCHEDULE_CHECKS">
+                </action>
+            </intent-filter>
+            <intent-filter>
+                <action
+                    android:name="com.mp3tunes.android.VEECHECK_CONSIDER_CHECK">
+                </action>
+            </intent-filter>
+        </receiver>
         
 		<service android:name=".service.Mp3tunesService"  />
+        <service android:name=".util.UpdateService">
+            <intent-filter>
+                <action
+                    android:name="com.mp3tunes.android.VEECHECK_PERFORM_CHECK">
+                </action>
+                <data android:scheme="http"></data>
+            </intent-filter>
+        </service>
     </application>
 </manifest> 

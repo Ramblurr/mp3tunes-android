@@ -61,4 +61,12 @@
 	<string name="ERROR_GENERIC_TITLE">Error Encountered</string>
 	<string name="ERROR_PLAYBACK_FAILED_TITLE"></string>
 	<string name="ERROR_PLAYBACK_FAILED"></string>
+    
+    <string name="update_ticker">MP3tunes Update</string>
+    <string name="update_title">MP3tunes Update Available</string>
+    <string name="update_message">Download update</string>
+    <string name="update_confirm_title">Confirm MP3tunes Update</string>
+    <string name="update_confirm_text">Would you like to update this application to the newest version?</string>
+    <string name="update_confirm_stop">Don\'t notify me of this update again</string>
+    
 </resources>

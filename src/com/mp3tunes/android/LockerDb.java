@@ -59,6 +59,8 @@ public class LockerDb
 
     private static final String DB_NAME = "locker.dat";
     private static final int DB_VERSION = 1;
+    
+    public static final String UNKNOWN_STRING = "Unknown";
 
     public LockerDb( Context context, Locker locker )
     {
@@ -119,7 +121,7 @@ public class LockerDb
                 Cursor c = mDb.query( "artist", Music.ID, "_id='"
                         + track.getArtistId() + "'", null, null, null, null );
                 if ( !c.moveToNext() )
-                    mDb.insert( "artist", "Unknown", cv );
+                    mDb.insert( "artist", UNKNOWN_STRING, cv );
                 c.close();
             }
             /*
@@ -139,7 +141,7 @@ public class LockerDb
                 // mDb.rawQuery("SELECT _id FROM album WHERE _id='"+track.getAlbumId()+"'"
                 // ,null);
                 if ( !c.moveToNext() )
-                    mDb.insert( "album", "Unknown", cv );
+                    mDb.insert( "album", UNKNOWN_STRING, cv );
                 // mDb.execSQL("INSERT INTO album(_id, album_name) VALUES("+track.getAlbumId()+", '"+track.getAlbumTitle()+"')");
                 c.close();
             }
@@ -159,7 +161,7 @@ public class LockerDb
                 cv.put( "artist_id", track.getArtistId() );
                 cv.put( "album_id", track.getAlbumId() );
                 cv.put( "cover_url", track.getAlbumArt() );
-                mDb.insert( "track", "Unknown", cv );
+                mDb.insert( "track", UNKNOWN_STRING, cv );
             }
             c.close();
 
@@ -199,7 +201,7 @@ public class LockerDb
                 Cursor c = mDb.query( "artist", Music.ID, "_id='"
                         + artist.getId() + "'", null, null, null, null );
                 if ( !c.moveToNext() ) // artist doesn't exist
-                    mDb.insert( "artist", "Unknown", cv );
+                    mDb.insert( "artist", UNKNOWN_STRING, cv );
                 else // artist exists, so lets update with new data
                 {
                     cv.remove( "_id" );
@@ -237,7 +239,7 @@ public class LockerDb
                         + album.getId() + "'", null, null, null, null );
 
                 if ( !c.moveToNext() ) // album doesn't exist
-                    mDb.insert( "album", "Unknown", cv );
+                    mDb.insert( "album", UNKNOWN_STRING, cv );
                 else // album exists, so lets update with new data
                 {
                     cv.remove( "_id" );
@@ -274,7 +276,7 @@ public class LockerDb
                         + playlist.getId() + "'", null, null, null, null );
 
                 if ( !c.moveToNext() ) // album doesn't exist
-                    mDb.insert( "playlist", "Unknown", cv );
+                    mDb.insert( "playlist", UNKNOWN_STRING, cv );
                 else // album exists, so lets update with new data
                 {
                     cv.remove( "_id" );
@@ -310,7 +312,7 @@ public class LockerDb
                         + type + "' AND token='"+token.getToken()+"'", null, null, null, null );
 
                 if ( !c.moveToNext() ) // album doesn't exist
-                    mDb.insert( "token", "Unknown", cv );
+                    mDb.insert( "token", UNKNOWN_STRING, cv );
                 else // album exists, so lets update with new data
                 {
                     mDb.update( "token", cv, "type='" + type + "' AND token='"+token.getToken()+"'", null );
@@ -958,7 +960,7 @@ public class LockerDb
             insertTrack( t );
             cv.put("playlist_id", playlist_id);
             cv.put( "track_id", t.getId() );
-            mDb.insert( "playlist_tracks", "Unknown", cv );
+            mDb.insert( "playlist_tracks", UNKNOWN_STRING, cv );
         }
         System.out.println( "insertion complete" );
     }
