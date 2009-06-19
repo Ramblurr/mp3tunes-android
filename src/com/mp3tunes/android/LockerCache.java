@@ -18,6 +18,9 @@
 ***************************************************************************/
 package com.mp3tunes.android;
 
+import android.content.Context;
+import android.content.SharedPreferences;
+
 public class LockerCache
 {
 
@@ -47,6 +50,8 @@ public class LockerCache
     static final int TRACK_TOKENS = 7;
     
 
+    private LockerCache()
+    {}
     public LockerCache( long lastUpdate, long lifetime  )
     {
 
@@ -138,5 +143,49 @@ public class LockerCache
     {
 
         mCacheLifetime = length;
+    }
+    
+    public void clearCache()
+    {
+        mArtistsLastUpdate = -1;
+        mAlbumsLastUpdate = -1;
+        mTracksLastUpdate = -1;
+        mPlaylistLastUpdate = -1;
+        mPrefsLastUpdate = -1;
+        mArtistsTokensLastUpdate = -1;
+        mAlbumsTokensLastUpdate = -1;
+        mTracksTokensLastUpdate = -1;
+    }
+    
+    public void saveCache(Context context)
+    {
+        SharedPreferences prefs = context.getSharedPreferences( MP3tunesApplication.LAST_UPDATE, 0 );
+        SharedPreferences.Editor editor = prefs.edit();
+        editor.putLong( "ArtistsLastUpdate", mArtistsLastUpdate );
+        editor.putLong( "AlbumsLastUpdate", mAlbumsLastUpdate);
+        editor.putLong( "TracksLastUpdate", mTracksLastUpdate);
+        editor.putLong( "PlaylistLastUpdate", mPlaylistLastUpdate);
+        editor.putLong( "PrefsLastUpdate", mPrefsLastUpdate);
+        editor.putLong( "ArtistsTokensLastUpdate", mArtistsTokensLastUpdate);
+        editor.putLong( "AlbumsTokensLastUpdate", mAlbumsTokensLastUpdate);
+        editor.putLong( "TracksTokensLastUpdate", mTracksTokensLastUpdate);
+        editor.commit();
+    }
+    
+    public static LockerCache loadCache( Context context, long lifetime )
+    {
+        LockerCache cache = new LockerCache();
+        SharedPreferences prefs = context.getSharedPreferences( MP3tunesApplication.LAST_UPDATE, 0 );
+        
+        cache.mArtistsLastUpdate = prefs.getLong( "ArtistsLastUpdate", -1 );
+        cache.mAlbumsLastUpdate = prefs.getLong( "AlbumsLastUpdate", -1 );
+        cache.mTracksLastUpdate = prefs.getLong( "TracksLastUpdate", -1 );
+        cache.mPlaylistLastUpdate = prefs.getLong( "PlaylistLastUpdate", -1 );
+        cache.mPrefsLastUpdate = prefs.getLong( "PrefsLastUpdate", -1 );
+        cache.mArtistsTokensLastUpdate = prefs.getLong( "ArtistsTokensLastUpdate", -1 );
+        cache.mAlbumsTokensLastUpdate = prefs.getLong( "AlbumsTokensLastUpdate", -1 );
+        cache.mTracksTokensLastUpdate = prefs.getLong( "TracksTokensLastUpdate", -1 );
+        cache.mCacheLifetime = lifetime;
+        return cache;
     }
 }

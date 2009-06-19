@@ -564,7 +564,6 @@ public class LockerList extends ListActivity implements ServiceConnection
         editor.remove( "mp3tunes_user" );
         editor.remove( "mp3tunes_pass" );
         editor.commit();
-        MP3tunesApplication.getInstance().clearUpdate();
         Music.sDb.clearDB();
         Music.unconnectFromDb( this );
     }

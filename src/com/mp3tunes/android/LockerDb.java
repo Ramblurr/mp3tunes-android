@@ -71,20 +71,19 @@ public class LockerDb
 
         mLocker = locker;
         mContext = context;
-        long lastupdate = MP3tunesApplication.getInstance().getLastUpdate();
-        mCache = new LockerCache( lastupdate, 86400000 ); // 1 day // TODO handle
-        // cache timeout
-        // properly
+        mCache = LockerCache.loadCache( context, 86400000  ); // 1 day
     }
 
     public void close()
     {
+        mCache.saveCache( mContext );
         if ( mDb != null )
             mDb.close();
     }
 
     public void clearDB()
     {
+        mCache.clearCache();
         mDb.delete( "track", null, null );
         mDb.delete( "album", null, null );
         mDb.delete( "artist", null, null );

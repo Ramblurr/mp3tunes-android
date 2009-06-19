@@ -90,43 +90,7 @@ public class MP3tunesApplication extends Application
                     }
                 });
         d.show();
-    }
-    
-    /**
-     * returns the last time the cache was updated. 
-     * this value is stored in Android's SharedPreferences
-     * @return a timestamp for the last time the cache was updated in 
-     *         or -1 if never.
-     */
-    public long getLastUpdate()
-    {
-        SharedPreferences prefs = getSharedPreferences( LAST_UPDATE, 0 );
-        return prefs.getLong( "last_update", -1 );
-    }
-    
-    /**
-     * sets the last time the cache was updated. 
-     * this value is stored in Android's SharedPreferences
-     */
-    public void setLastUpdate(long timestamp) 
-    {
-        SharedPreferences prefs = getSharedPreferences( LAST_UPDATE, 0 );
-        SharedPreferences.Editor editor = prefs.edit();
-        editor.putLong( "last_update", timestamp );
-        editor.commit();
-    }
-    
-    /**
-     * clears the lastupdate timestamp
-     */
-    public void clearUpdate()
-    {
-        SharedPreferences prefs = getSharedPreferences( LAST_UPDATE, 0 );
-        SharedPreferences.Editor editor = prefs.edit();
-        editor.putLong( "last_update", -1 );
-        editor.commit();
-    }
-    
+    }    
     
 
 }
