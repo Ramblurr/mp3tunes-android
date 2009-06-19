@@ -149,6 +149,7 @@ public class Player extends Activity implements ServiceConnection
 
     @Override
     public void onDestroy() {
+        Music.unbindFromService( this );
         mAlbumArtWorker.quit();
         super.onDestroy();
     }
@@ -158,7 +159,7 @@ public class Player extends Activity implements ServiceConnection
     }
     
     public void onServiceDisconnected(ComponentName name) {
-//        finish();
+        finish();
     }
     
     private View.OnClickListener mPrevListener = new View.OnClickListener() {

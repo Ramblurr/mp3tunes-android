@@ -33,6 +33,7 @@ import android.database.CharArrayBuffer;
 import android.database.Cursor;
 import android.media.AudioManager; //import android.media.MediaFile;
 import android.net.Uri;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
@@ -58,10 +59,12 @@ import android.widget.SimpleCursorAdapter;
 import android.widget.TextView;
 import android.widget.AdapterView.AdapterContextMenuInfo;
 
+import java.lang.Thread.UncaughtExceptionHandler;
 import java.text.Collator;
 import java.util.Arrays;
 
 import com.binaryelysium.mp3tunes.api.Locker;
+import com.binaryelysium.mp3tunes.api.Token;
 import com.mp3tunes.android.LockerDb;
 import com.mp3tunes.android.MP3tunesApplication;
 import com.mp3tunes.android.Music;
@@ -70,23 +73,10 @@ import com.mp3tunes.android.TouchInterceptor;
 import com.mp3tunes.android.MusicAlphabetIndexer;
 import com.mp3tunes.android.service.ITunesService;
 import com.mp3tunes.android.service.Mp3tunesService;
+import com.mp3tunes.android.util.UserTask;
 
-public class QueueBrowser extends ListActivity implements View.OnCreateContextMenuListener, /*
-                                                                                             * Music.
-                                                                                             * Defs
-                                                                                             * ,
-                                                                                             */
-        ServiceConnection
+public class QueueBrowser extends ListActivity implements View.OnCreateContextMenuListener, Music.Defs, ServiceConnection
 {
-
-    private final int CHILD_MENU_BASE = 0;
-    private final int Q_SELECTED = CHILD_MENU_BASE;
-    private final int Q_ALL = CHILD_MENU_BASE + 1;
-    private final int SAVE_AS_PLAYLIST = CHILD_MENU_BASE + 2;
-    private final int PLAY_ALL = CHILD_MENU_BASE + 3;
-    private final int CLEAR_PLAYLIST = CHILD_MENU_BASE + 4;
-    private final int REMOVE = CHILD_MENU_BASE + 5;
-    private final int SEARCH = CHILD_MENU_BASE + 6;
 
     private static final String LOGTAG = "TrackBrowser";
 
@@ -104,13 +94,12 @@ public class QueueBrowser extends ListActivity implements View.OnCreateContextMe
     private String mAlbumId;
     private String mArtistId;
     private String mPlaylist;
+    private String mPlaylistName;
     private String mGenre;
     private String mSortOrder;
     private int mSelectedPosition;
     private long mSelectedId;
 
-    private LockerDb mDb;
-    private Locker mLocker;
 
     public QueueBrowser()
     {}
@@ -128,6 +117,7 @@ public class QueueBrowser extends ListActivity implements View.OnCreateContextMe
             mAlbumId = icicle.getString( "album" );
             mArtistId = icicle.getString( "artist" );
             mPlaylist = icicle.getString( "playlist" );
+            mPlaylistName = icicle.getString( "playlist_name" );
             mGenre = icicle.getString( "genre" );
             mEditMode = icicle.getBoolean( "editmode", false );
         }
@@ -139,27 +129,16 @@ public class QueueBrowser extends ListActivity implements View.OnCreateContextMe
             Intent intent = getIntent();
             mArtistId = intent.getStringExtra( "artist" );
             mPlaylist = intent.getStringExtra( "playlist" );
+            mPlaylistName = intent.getStringExtra( "playlist_name" );
             mGenre = intent.getStringExtra( "genre" );
             mEditMode = intent.getAction().equals( Intent.ACTION_EDIT );
         }
-
-        mCursorCols = new String[] { MediaStore.Audio.Media._ID, MediaStore.Audio.Media.TITLE,
-                MediaStore.Audio.Media.TITLE_KEY, MediaStore.Audio.Media.DATA,
-                MediaStore.Audio.Media.ALBUM, MediaStore.Audio.Media.ARTIST,
-                MediaStore.Audio.Media.ARTIST_ID, MediaStore.Audio.Media.DURATION };
-        mPlaylistMemberCols = new String[] { MediaStore.Audio.Playlists.Members._ID,
-                MediaStore.Audio.Media.TITLE, MediaStore.Audio.Media.TITLE_KEY,
-                MediaStore.Audio.Media.DATA, MediaStore.Audio.Media.ALBUM,
-                MediaStore.Audio.Media.ARTIST, MediaStore.Audio.Media.ARTIST_ID,
-                MediaStore.Audio.Media.DURATION, MediaStore.Audio.Playlists.Members.PLAY_ORDER,
-                MediaStore.Audio.Playlists.Members.AUDIO_ID };
 
         setContentView( R.layout.media_picker_activity );
         mTrackList = getListView();
         mTrackList.setOnCreateContextMenuListener( this );
         if ( mEditMode )
         {
-            // ((TouchInterceptor) mTrackList).setDragListener(mDragListener);
             ( ( TouchInterceptor ) mTrackList ).setDropListener( mDropListener );
             ( ( TouchInterceptor ) mTrackList ).setRemoveListener( mRemoveListener );
             mTrackList.setCacheColorHint( 0 );
@@ -176,23 +155,7 @@ public class QueueBrowser extends ListActivity implements View.OnCreateContextMe
             setListAdapter( mAdapter );
         }
         Music.bindToService( this, this );
-
-        mLocker = ( Locker ) MP3tunesApplication.getInstance().map.get( "mp3tunes_locker" );
-        try
-        // establish a connection with the database
-        {
-            mDb = new LockerDb( this, null ); // TODO fix this, we dont want to
-                                              // pass a null locker
-
-        }
-        catch ( Exception ex )
-        {
-            // database connection failed.
-            // Show an error and exit gracefully.
-            System.out.println( ex.getMessage() );
-            ex.printStackTrace();
-            finish();
-        }
+        Music.connectToDb( this  );
     }
 
     public void onServiceConnected( ComponentName name, IBinder service )
@@ -201,13 +164,11 @@ public class QueueBrowser extends ListActivity implements View.OnCreateContextMe
         if ( mAdapter == null )
         {
             // Log.i("@@@", "starting query");
-            mAdapter = new TrackListAdapter( getApplication(), // need to use
-                                                               // application
-                                                               // context to
-                                                               // avoid leaks
+            // need to use application context to avoid leaks
+            mAdapter = new TrackListAdapter( getApplication(), 
                     this,
-                    // mEditMode ? R.layout.edit_track_list_item :
-                    // R.layout.track_list_item,
+//                     mEditMode ? R.layout.edit_track_list_item :
+//                     R.layout.track_list_item,
                     R.layout.track_list_item,
                     null, // cursor
                     new String[] {},
@@ -217,8 +178,8 @@ public class QueueBrowser extends ListActivity implements View.OnCreateContextMe
                             && !( mPlaylist.equals( "podcasts" ) || mPlaylist
                                     .equals( "recentlyadded" ) ) );
             setListAdapter( mAdapter );
-            // setTitle(R.string.working_songs);
-            getTrackCursor( mAdapter.getQueryHandler(), null );
+            setTitle(R.string.title_working_songs);
+            getTrackCursor( null );
         }
         else
         {
@@ -235,8 +196,8 @@ public class QueueBrowser extends ListActivity implements View.OnCreateContextMe
             }
             else
             {
-                // setTitle(R.string.working_songs);
-                getTrackCursor( mAdapter.getQueryHandler(), null );
+                setTitle(R.string.title_working_songs);
+                getTrackCursor( null );
             }
         }
     }
@@ -285,6 +246,7 @@ public class QueueBrowser extends ListActivity implements View.OnCreateContextMe
                 c.close();
             }
         }
+        Music.unconnectFromDb( this );
         super.onDestroy();
     }
 
@@ -332,6 +294,7 @@ public class QueueBrowser extends ListActivity implements View.OnCreateContextMe
         outcicle.putString( "artist", mArtistId );
         outcicle.putString( "album", mAlbumId );
         outcicle.putString( "playlist", mPlaylist );
+        outcicle.putString( "playlist_name", mPlaylistName );
         outcicle.putString( "genre", mGenre );
         outcicle.putBoolean( "editmode", mEditMode );
         super.onSaveInstanceState( outcicle );
@@ -388,55 +351,29 @@ public class QueueBrowser extends ListActivity implements View.OnCreateContextMe
     {
 
         CharSequence fancyName = null;
-        /*
-         * if (mAlbumId != null) { int numresults = mTrackCursor != null ?
-         * mTrackCursor.getCount() : 0; if (numresults > 0) {
-         * mTrackCursor.moveToFirst(); int idx =
-         * mTrackCursor.getColumnIndexOrThrow(MediaStore.Audio.Media.ALBUM);
-         * fancyName = mTrackCursor.getString(idx); // For compilation albums
-         * show only the album title, // but for regular albums show
-         * "artist - album". // To determine whether something is a compilation
-         * // album, do a query for the artist + album of the // first item, and
-         * see if it returns the same number // of results as the album query.
-         * String where = MediaStore.Audio.Media.ALBUM_ID + "='" + mAlbumId +
-         * "' AND " + MediaStore.Audio.Media.ARTIST_ID + "=" +
-         * mTrackCursor.getLong(mTrackCursor.getColumnIndexOrThrow(
-         * MediaStore.Audio.Media.ARTIST_ID)); Cursor cursor = Music.query(this,
-         * MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, new String[]
-         * {MediaStore.Audio.Media.ALBUM}, where, null, null); if (cursor !=
-         * null) { if (cursor.getCount() != numresults) { // compilation album
-         * fancyName = mTrackCursor.getString(idx); } cursor.deactivate(); } if
-         * (fancyName == null || fancyName.equals(MediaFile.UNKNOWN_STRING)) {
-         * fancyName = getString(R.string.unknown_album_name); } } } else
-         */
-        // if (mPlaylist != null) {
-        if ( mPlaylist.equals( "nowplaying" ) )
-        {
-            // if (Music.getCurrentShuffleMode() ==
-            // Mp3tunesService.SHUFFLE_AUTO) {
-            // fancyName = getText(R.string.partyshuffle_title);
-            // } else {
-            fancyName = getText( R.string.title_nowplaying );
+        if (mAlbumId != null) {
+            int numresults = mTrackCursor != null ? mTrackCursor.getCount() : 0;
+            if (numresults > 0) {
+                mTrackCursor.moveToFirst();
+                int album = Music.TRACK_MAPPING.ALBUM_NAME;
+                int artist = Music.TRACK_MAPPING.ALBUM_NAME;
+                fancyName = mTrackCursor.getString(artist) + " - " + mTrackCursor.getString(album);
+                if (fancyName == null || fancyName.equals(LockerDb.UNKNOWN_STRING)) {
+                    fancyName = getString(R.string.unknown_album_name);
+                }
+            }
+        } else  if (mPlaylist != null) {
+            if ( mPlaylist.equals( "nowplaying" ) )
+            {
+                // if (Music.getCurrentShuffleMode() ==
+                // Mp3tunesService.SHUFFLE_AUTO) {
+                // fancyName = getText(R.string.partyshuffle_title);
+                // } else {
+                fancyName = getText( R.string.title_nowplaying );
+            } else {
+                fancyName  = mPlaylistName;
+            }
         }
-        /*
-         * } else if (mPlaylist.equals("podcasts")){ fancyName =
-         * getText(R.string.podcasts_title); } else if
-         * (mPlaylist.equals("recentlyadded")){ fancyName =
-         * getText(R.string.recentlyadded_title); } else { String [] cols = new
-         * String [] { MediaStore.Audio.Playlists.NAME }; Cursor cursor =
-         * Music.query(this,
-         * ContentUris.withAppendedId(Playlists.EXTERNAL_CONTENT_URI,
-         * Long.valueOf(mPlaylist)), cols, null, null, null); if (cursor !=
-         * null) { if (cursor.getCount() != 0) { cursor.moveToFirst(); fancyName
-         * = cursor.getString(0); } cursor.deactivate(); } } } else if (mGenre
-         * != null) { String [] cols = new String [] {
-         * MediaStore.Audio.Genres.NAME }; Cursor cursor = Music.query(this,
-         * ContentUris
-         * .withAppendedId(MediaStore.Audio.Genres.EXTERNAL_CONTENT_URI,
-         * Long.valueOf(mGenre)), cols, null, null, null); if (cursor != null) {
-         * if (cursor.getCount() != 0) { cursor.moveToFirst(); fancyName =
-         * cursor.getString(0); } cursor.deactivate(); } }
-         */
          if (fancyName != null)
              setTitle(fancyName);
          else
@@ -550,7 +487,7 @@ public class QueueBrowser extends ListActivity implements View.OnCreateContextMe
         }
         v.setVisibility( View.GONE );
         mTrackList.invalidateViews();
-        mDb.removeQueueItem( which, which );
+        Music.sDb.removeQueueItem( which, which );
 //        if ( mTrackCursor instanceof NowPlayingCursor )
 //        {
 //            ( ( NowPlayingCursor ) mTrackCursor ).removeItem( which );
@@ -599,7 +536,7 @@ public class QueueBrowser extends ListActivity implements View.OnCreateContextMe
                     mDeletedOneRow = false;
                     return;
                 }
-                Cursor c = mDb.getQueueCursor();
+                Cursor c = Music.sDb.getQueueCursor();
                 if ( c.getCount() == 0 )
                 {
                     finish();
@@ -778,7 +715,7 @@ public class QueueBrowser extends ListActivity implements View.OnCreateContextMe
             View v = mTrackList.getSelectedView();
             v.setVisibility( View.GONE );
             mTrackList.invalidateViews();
-            mDb.removeQueueItem( curpos, curpos );
+            Music.sDb.removeQueueItem( curpos, curpos );
             v.setVisibility( View.VISIBLE );
             mTrackList.invalidateViews();
         }
@@ -806,44 +743,28 @@ public class QueueBrowser extends ListActivity implements View.OnCreateContextMe
 
     private void moveItem( boolean up )
     {
-        System.out.println( "MOVE ITEM WTF" );
         int curcount = mTrackCursor.getCount();
         int curpos = mTrackList.getSelectedItemPosition();
         if ( ( up && curpos < 1 ) || ( !up && curpos >= curcount - 1 ) )
         {
             return;
         }
-
-        moveQueueItem( curpos, up ? curpos - 1 : curpos + 1 );
-        ( ( TrackListAdapter ) getListAdapter() ).notifyDataSetChanged();
-        getListView().invalidateViews();
-        mDeletedOneRow = true;
-      if ( up )
-      {
-          mTrackList.setSelection( curpos - 1 );
-      }
-      else
-      {
-          mTrackList.setSelection( curpos + 1 );
-      }
-//        if ( mTrackCursor instanceof NowPlayingCursor )
-//        {
-//            NowPlayingCursor c = ( NowPlayingCursor ) mTrackCursor;
-//            c.moveItem( curpos, up ? curpos - 1 : curpos + 1 );
-//            ( ( TrackListAdapter ) getListAdapter() ).notifyDataSetChanged();
-//            getListView().invalidateViews();
-//            mDeletedOneRow = true;
-//            if ( up )
-//            {
-//                mTrackList.setSelection( curpos - 1 );
-//            }
-//            else
-//            {
-//                mTrackList.setSelection( curpos + 1 );
-//            }
-//        }
-//        else
-//        {
+        if(mPlaylist == "nowplaying") {
+            moveQueueItem( curpos, up ? curpos - 1 : curpos + 1 );
+            ( ( TrackListAdapter ) getListAdapter() ).notifyDataSetChanged();
+            getListView().invalidateViews();
+            mDeletedOneRow = true;
+            if ( up )
+            {
+                mTrackList.setSelection( curpos - 1 );
+            }
+            else
+            {
+                mTrackList.setSelection( curpos + 1 );
+            }
+        }
+        else
+        {
 //            int colidx = mTrackCursor
 //                    .getColumnIndexOrThrow( MediaStore.Audio.Playlists.Members.PLAY_ORDER );
 //            mTrackCursor.moveToPosition( curpos );
@@ -871,7 +792,7 @@ public class QueueBrowser extends ListActivity implements View.OnCreateContextMe
 //            values.put( MediaStore.Audio.Playlists.Members.PLAY_ORDER, currentplayidx );
 //            wherearg[0] = mTrackCursor.getString( 0 );
 //            res.update( baseUri, values, where, wherearg );
-//        }
+        }
     }
 
     @Override
@@ -881,7 +802,7 @@ public class QueueBrowser extends ListActivity implements View.OnCreateContextMe
         {
             return;
         }
-        // Music.playAll(this, mTrackCursor, position);
+         Music.playAll(this, mTrackCursor, position);
     }
 
     @Override
@@ -995,62 +916,34 @@ public class QueueBrowser extends ListActivity implements View.OnCreateContextMe
     // }
     // }
 
-    private Cursor getTrackCursor( AsyncQueryHandler async, String filter )
+    private Cursor getTrackCursor( String filter )
     {
         Cursor ret = null;
-        mSortOrder = MediaStore.Audio.Media.TITLE_KEY;
-        StringBuilder where = new StringBuilder();
-        where.append( MediaStore.Audio.Media.TITLE + " != ''" );
 
-        // Add in the filtering constraints
-        String[] keywords = null;
-        if ( filter != null )
+        if ( mPlaylist!= null && mPlaylist.equals( "nowplaying" ) )
         {
-            String[] searchWords = filter.split( " " );
-            keywords = new String[searchWords.length];
-            Collator col = Collator.getInstance();
-            col.setStrength( Collator.PRIMARY );
-            for ( int i = 0; i < searchWords.length; i++ )
+            if ( Music.sService != null )
             {
-                keywords[i] = '%' + MediaStore.Audio.keyFor( searchWords[i] ) + '%';
+                ret = Music.sDb.getQueueCursor();
+                if ( ret.getCount() == 0 )
+                {
+                    finish();
+                }
             }
-            for ( int i = 0; i < searchWords.length; i++ )
+            else
             {
-                where.append( " AND " );
-                where.append( MediaStore.Audio.Media.ARTIST_KEY + "||" );
-                where.append( MediaStore.Audio.Media.ALBUM_KEY + "||" );
-                where.append( MediaStore.Audio.Media.TITLE_KEY + " LIKE ?" );
+                // Nothing is playing.
             }
+        } else {
+            new FetchTracksTask().execute();
         }
-
-        if ( mPlaylist != null )
+        
+        // This special case is for the "nowplaying" cursor, which cannot be
+        // handled asynchronously 
+        if ( ret != null )
         {
-            if ( mPlaylist.equals( "nowplaying" ) )
-            {
-                if ( Music.sService != null )
-                {
-//                    ret = new NowPlayingCursor( Music.sService, mCursorCols );
-                    ret = mDb.getQueueCursor();
-                    if ( ret.getCount() == 0 )
-                    {
-                        finish();
-                    }
-                }
-                else
-                {
-                    // Nothing is playing.
-                }
-            }
-
-            // This special case is for the "nowplaying" cursor, which cannot be
-            // handled
-            // asynchronously using AsyncQueryHandler, so we do some extra
-            // initialization here.
-            if ( ret != null && async != null )
-            {
-                init( ret );
-                setTitle();
-            }
+            init( ret );
+            setTitle();
         }
         return ret;
 
@@ -1075,36 +968,18 @@ public class QueueBrowser extends ListActivity implements View.OnCreateContextMe
         private AlphabetIndexer mIndexer;
 
         private QueueBrowser mActivity = null;
-        private AsyncQueryHandler mQueryHandler;
         private String mConstraint = null;
         private boolean mConstraintIsValid = false;
 
         class ViewHolder
         {
-
+            ImageView icon;
             TextView line1;
             TextView line2;
             TextView duration;
             ImageView play_indicator;
             CharArrayBuffer buffer1;
             char[] buffer2;
-        }
-
-        class QueryHandler extends AsyncQueryHandler
-        {
-
-            QueryHandler( ContentResolver res )
-            {
-                super( res );
-            }
-
-            @Override
-            protected void onQueryComplete( int token, Object cookie, Cursor cursor )
-            {
-                // Log.i("@@@", "query complete: " + cursor.getCount() + "   " +
-                // mActivity);
-                mActivity.init( cursor );
-            }
         }
 
         TrackListAdapter( Context context, QueueBrowser currentactivity, int layout, Cursor cursor,
@@ -1117,18 +992,11 @@ public class QueueBrowser extends ListActivity implements View.OnCreateContextMe
             mDisableNowPlayingIndicator = disablenowplayingindicator;
             mUnknownArtist = context.getString( R.string.unknown_artist_name );
             mUnknownAlbum = context.getString( R.string.unknown_album_name );
-
-            mQueryHandler = new QueryHandler( context.getContentResolver() );
         }
 
         public void setActivity( QueueBrowser newactivity )
         {
             mActivity = newactivity;
-        }
-
-        public AsyncQueryHandler getQueryHandler()
-        {
-            return mQueryHandler;
         }
 
         private void getColumnIndices( Cursor cursor )
@@ -1138,7 +1006,7 @@ public class QueueBrowser extends ListActivity implements View.OnCreateContextMe
                 mTitleIdx = Music.TRACK_MAPPING.TITLE;
                 mArtistIdx = Music.TRACK_MAPPING.ARTIST_NAME;
                 mAlbumIdx = Music.TRACK_MAPPING.ALBUM_NAME;
-                mDurationIdx = 0;
+                mDurationIdx = Music.TRACK_MAPPING.TRACK_LENGTH;
                 mAudioIdIdx = Music.TRACK_MAPPING.ID;
 
                 if ( mIndexer != null )
@@ -1158,24 +1026,27 @@ public class QueueBrowser extends ListActivity implements View.OnCreateContextMe
         public View newView( Context context, Cursor cursor, ViewGroup parent )
         {
             View v = super.newView( context, cursor, parent );
-            ImageView iv = ( ImageView ) v.findViewById( R.id.icon );
-            if ( mActivity.mEditMode )
-            {
-                iv.setVisibility( View.VISIBLE );
-                iv.setImageResource( R.drawable.ic_mp_move );
-            }
-            else
-            {
-                iv.setVisibility( View.GONE );
-            }
 
             ViewHolder vh = new ViewHolder();
+            vh.icon = (ImageView) v.findViewById( R.id.icon );
             vh.line1 = ( TextView ) v.findViewById( R.id.line1 );
             vh.line2 = ( TextView ) v.findViewById( R.id.line2 );
             vh.duration = ( TextView ) v.findViewById( R.id.duration );
             vh.play_indicator = ( ImageView ) v.findViewById( R.id.play_indicator );
             vh.buffer1 = new CharArrayBuffer( 100 );
             vh.buffer2 = new char[200];
+            
+            if ( mActivity.mEditMode )
+            {
+                vh.icon.setVisibility( View.VISIBLE );
+                vh.icon.setImageResource( R.drawable.ic_mp_move );
+            }
+            else
+            {
+                vh.icon.setImageResource( R.drawable.song_icon );
+                vh.icon.setVisibility( View.VISIBLE );
+            }
+            
             v.setTag( vh );
             return v;
         }
@@ -1183,14 +1054,11 @@ public class QueueBrowser extends ListActivity implements View.OnCreateContextMe
         @Override
         public void bindView( View view, Context context, Cursor cursor )
         {
-
-            String text = "row: " + cursor.getPosition() +" ";
             ViewHolder vh = ( ViewHolder ) view.getTag();
 
             cursor.copyStringToBuffer( mTitleIdx, vh.buffer1 );
             vh.line1.setText( vh.buffer1.data, 0, vh.buffer1.sizeCopied );
-            text += vh.line1.getText().toString() + " ";
-            int secs = cursor.getInt( mDurationIdx ) / 1000;
+            long secs = cursor.getLong( mDurationIdx ) / 1000;
             if ( secs == 0 )
             {
                 vh.duration.setText( "" );
@@ -1212,7 +1080,6 @@ public class QueueBrowser extends ListActivity implements View.OnCreateContextMe
             {
                 builder.append( name );
             }
-            text += name + " ";
             int len = builder.length();
             if ( vh.buffer2.length < len )
             {
@@ -1223,25 +1090,12 @@ public class QueueBrowser extends ListActivity implements View.OnCreateContextMe
 
             ImageView iv = vh.play_indicator;
             int id = -1;
-            if ( Music.sService != null )
-            {
-                // TODO: IPC call on each bind??
-                try
-                {
-                    if ( mIsNowPlaying )
-                    {
-                        // we -1 form the current position because the queue is
-                        // 1 based in the sql table
-                        id = Music.sService.getQueuePosition() - 1;
-                    }
-                    else
-                    {
-                        id = Integer.parseInt( Music.sService.getMetadata()[1] );
-                    }
-                }
-                catch ( RemoteException ex )
-                {}
-            }
+            if ( mIsNowPlaying )
+                // we -1 form the current position because the queue is
+                // 1 based in the sql table
+                id = Music.getCurrentQueuePosition() - 1;
+            else 
+                id = Music.getCurrentTrackId();
 
             // Determining whether and where to show the "now playing indicator
             // is tricky, because we don't actually keep track of where the
@@ -1271,7 +1125,6 @@ public class QueueBrowser extends ListActivity implements View.OnCreateContextMe
             {
                 iv.setVisibility( View.GONE );
             }
-            System.out.println( "TEXT: " + text );
         }
 
         @Override
@@ -1280,7 +1133,11 @@ public class QueueBrowser extends ListActivity implements View.OnCreateContextMe
             if ( cursor != mActivity.mTrackCursor )
             {
                 mActivity.mTrackCursor = cursor;
-                super.changeCursor( cursor );
+//                if(mActivity.mPlaylist != null && mActivity.mPlaylist  != "nowplaying")
+//                {
+//                    super.changeCursorAndColumns( cursor, Music.TRACKP,  Music.TRACKP_MAPPING);
+//                } else
+                    super.changeCursor( cursor );
                 getColumnIndices( cursor );
             }
         }
@@ -1295,7 +1152,7 @@ public class QueueBrowser extends ListActivity implements View.OnCreateContextMe
             {
                 return getCursor();
             }
-            Cursor c = mActivity.getTrackCursor( null, s );
+            Cursor c = mActivity.getTrackCursor( s );
             mConstraint = s;
             mConstraintIsValid = true;
             return c;
@@ -1324,6 +1181,50 @@ public class QueueBrowser extends ListActivity implements View.OnCreateContextMe
         public int getSectionForPosition( int position )
         {
             return 0;
+        }
+    }
+    
+    private class FetchTracksTask extends AsyncTask<Void, Void, Boolean>
+    {
+        String[] tokens= null;
+        Cursor cursor;
+        @Override
+        public void onPreExecute()
+        {
+            Music.setSpinnerState(QueueBrowser.this, true);
+        }
+
+        @Override
+        public Boolean doInBackground( Void... params )
+        {
+            try
+            {
+                
+                if(mAlbumId != null)
+                    cursor = Music.sDb.getTracksForAlbum( Integer.valueOf( mAlbumId ) );
+                else if(mPlaylist != null )
+                    cursor = Music.sDb.getTracksForPlaylist( Integer.valueOf( mPlaylist ) );
+                else
+                    cursor = Music.sDb.getTableList( Music.Meta.TRACK );
+                
+                Token[] t = Music.sDb.getTokens( Music.Meta.TRACK );
+//                tokens = LockerDb.tokensToString( t );
+            }
+            catch ( Exception e )
+            {
+                return false;
+            }
+            return true;
+        }
+
+        @Override
+        public void onPostExecute( Boolean result )
+        {
+            Music.setSpinnerState(QueueBrowser.this, false);
+            if( cursor != null)
+                QueueBrowser.this.init(cursor);
+            else
+                System.out.println("CURSOR NULL");
         }
     }
 }

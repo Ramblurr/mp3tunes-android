@@ -47,6 +47,7 @@ import android.content.IntentFilter;
 import android.content.ServiceConnection;
 import android.content.SharedPreferences;
 import android.database.Cursor;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.os.RemoteException;
@@ -77,12 +78,6 @@ import android.widget.ViewFlipper;
 public class LockerList extends ListActivity implements ServiceConnection
 {
     private EditText mSearchField;
-    private Button mSearchButton;
-    private TextView mHeaderText;
-    private ImageButton mHeaderIcon;
-    private LinearLayout mSearchBar;
-    private LinearLayout mMainHeader;
-    private ViewFlipper mViewFlipper;
 
     // the database cursor
     private Cursor mCursor = null;
@@ -130,11 +125,7 @@ public class LockerList extends ListActivity implements ServiceConnection
     private Animation mLTRanim;
     private Animation mRTLanim;
 
-    // Stores browsing history within the activity
-    private Stack<HistoryUnit> mHistory;
     private IntentFilter mIntentFilter;
-    
-    private String[] mAlphabet;
 
     /**
      * Encapsulates the required fields to store a browsing state.
@@ -168,22 +159,12 @@ public class LockerList extends ListActivity implements ServiceConnection
         if(! Music.connectToDb( this ) )
             logout(); //TODO show error
         
-        mHistory = new Stack<HistoryUnit>();
 
         mIntentFilter = new IntentFilter();
         mIntentFilter.addAction( Mp3tunesService.PLAYBACK_ERROR );
         mIntentFilter.addAction( Mp3tunesService.META_CHANGED );
+
         
-        mSearchField = ( EditText ) findViewById( R.id.search_editbox );
-        mSearchButton = ( Button ) findViewById( R.id.search_button );
-        mSearchButton.setOnClickListener( mSearchListener );
-        mHeaderText = ( TextView ) findViewById( R.id.header_text );
-        mHeaderIcon = ( ImageButton ) findViewById( R.id.header_icon );
-        mSearchBar = ( LinearLayout ) findViewById( R.id.SearchBar );
-        mMainHeader = ( LinearLayout ) findViewById( R.id.main_header );
-        mViewFlipper = ( ViewFlipper ) findViewById( R.id.ViewFlipper );
-        
-        getAlphabet(LockerList.this);
         Music.bindToService(this, this);
         displayMainMenu( TRANSLATION_LEFT );
     }
@@ -282,44 +263,6 @@ public class LockerList extends ListActivity implements ServiceConnection
         }
         return false;
     }
-
-    /**
-     * We want to intercept the Back keypress so we can handle our own backwards
-     * navigation.
-     */
-    public boolean onKeyDown( int keyCode, KeyEvent event )
-    {
-        if ( keyCode == KeyEvent.KEYCODE_BACK )
-        {
-            if ( !mHistory.isEmpty() )
-            {
-                if( mPositionMenu == STATE.SEARCH ) {
-                    getListView().setVisibility( View.VISIBLE );
-                    toggleHeader();
-                }
-                HistoryUnit u = mHistory.pop();
-                mPositionMenu = u.state;
-                getListView().startAnimation( mLTRanim );
-                setListAdapter( u.adapter );
-                ((ListAdapter) getListAdapter()).disableLoadBar();
-                return true;
-            }
-        }
-        return false;
-    }
-    
-    private void toggleHeader()
-    {
-        if( mViewFlipper.getDisplayedChild() == 0 )
-        {
-            mViewFlipper.setDisplayedChild( 1 );
-            getListView().setVisibility( View.INVISIBLE );
-            
-        } else {
-            mViewFlipper.setDisplayedChild( 0 );
-            getListView().setVisibility( View.VISIBLE );
-        }
-    }
     
     OnClickListener mSearchListener = new OnClickListener()
     {
@@ -353,10 +296,6 @@ public class LockerList extends ListActivity implements ServiceConnection
 
     protected void onListItemClick( ListView l, View vu, int position, long id )
     {
-        // Store the current state in the history stack
-        HistoryUnit u = new HistoryUnit( mPositionMenu, ( ListAdapter ) getListAdapter() );
-        mHistory.push( u );
-
         // Show the requested option
         refreshMenu( position );
     }
@@ -373,177 +312,47 @@ public class LockerList extends ListActivity implements ServiceConnection
             mPositionRow = pos;
             showSubMenu( TRANSLATION_LEFT );
         }
-        else
-        {
-            if ( mCursor != null && mPositionMenu != STATE.PLAYLISTS
-                    && mPositionMenu != STATE.SEARCH )
-                mCursor.moveToPosition( pos );
-
-            if ( mPositionMenu == STATE.ARTIST )
-            { // Going to album list
-                ListAdapter a = ( ListAdapter ) getListAdapter();
-                int artist_id = ( Integer ) a.getItem( pos );
-                new FetchAlbumsTask().execute( TRANSLATION_LEFT, artist_id );
-            }
-            else if ( mPositionMenu == STATE.ALBUM )
-            { // Going to track list
-                ListAdapter a = ( ListAdapter ) getListAdapter();
-                int album_id = ( Integer ) a.getItem( pos );
-                new FetchTracksTask().execute( TRANSLATION_LEFT, album_id );
-            }
-            else if ( mPositionMenu == STATE.TRACK )
-            {
-                ListAdapter a = ( ListAdapter ) getListAdapter();
-                int track_id = ( Integer ) a.getItem( pos );
-                playTrack( track_id );
-            }
-            else if ( mPositionMenu == STATE.PLAYLISTS )
-            {
-                ListAdapter a = ( ListAdapter ) getListAdapter();
-                int playlist_id = ( Integer ) a.getItem( pos );
-                new FetchPlaylistsTask().execute( TRANSLATION_LEFT, playlist_id );
-
-            }
-            else if ( mPositionMenu == STATE.SEARCH )
-            {
-                ListAdapter a = ( ListAdapter ) getListAdapter();
-                int objid = ( Integer ) a.getItem( pos );
-                Music.Meta type = ( Music.Meta ) a.getSecondValue( pos );
-                
-                switch ( type )
-                {
-                    case ARTIST:
-                        new FetchAlbumsTask().execute( TRANSLATION_LEFT, objid );
-                        break; 
-                    case TRACK:
-                        playTrack( objid );
-                        break;
-                }
-                
-            }
-        }
-
     }
 
     private void showSubMenu( int sense )
     {
-//        if ( sense == TRANSLATION_LEFT )
-//        {
-//            getListView().startAnimation( mRTLanim );
-//        }
-//        else if ( sense == TRANSLATION_RIGHT )
-//        {
-//            getListView().startAnimation( mLTRanim );
-//        }
-
-        // which manu menu option has been selected
+        // which menu option has been selected
+        Intent intent;
         switch ( mMainOpts[mPositionRow] )
         {
         case R.string.artists:
-            new FetchArtistsTask().execute( sense );
+            intent = new Intent(Intent.ACTION_PICK);
+            intent.setDataAndType(Uri.EMPTY, "vnd.mp3tunes.android.dir/artist");
+            startActivity(intent);
             return; 
 
         case R.string.albums:
-            new FetchAlbumsTask().execute( sense );
+            intent = new Intent(Intent.ACTION_PICK);
+            intent.setDataAndType(Uri.EMPTY, "vnd.mp3tunes.android.dir/album");
+            startActivity(intent);
             return;
 
         case R.string.tracks:
-            new FetchTracksTask().execute( sense );
+            intent = new Intent(Intent.ACTION_PICK);
+            intent.setDataAndType(Uri.EMPTY, "vnd.mp3tunes.android.dir/track");
+            startActivity(intent);
             return;
 
         case R.string.search:
-            mPositionMenu = STATE.SEARCH;
-            (( ListAdapter ) getListAdapter() ).disableLoadBar();
-            toggleHeader();
+//            mPositionMenu = STATE.SEARCH;
+//            (( ListAdapter ) getListAdapter() ).disableLoadBar();
+//            toggleHeader();
             
             break;
 
         case R.string.playlists:
-            new FetchPlaylistsTask().execute( sense );
+            intent = new Intent(Intent.ACTION_PICK);
+            intent.setDataAndType(Uri.EMPTY, "vnd.mp3tunes.android.dir/playlist");
+            startActivity(intent);
             break;
         }
     }
     
-    private void handleListSwitch( int id_field, int icon_id, int text_id, int second_text_id, int disclosure_id, String[] tokens )
-    {
-        ((ListAdapter) getListAdapter()).disableLoadBar();
-        // if the cursor is empty, we adjust the text in function of the submenu
-        if ( mCursor == null )
-        {
-            System.out.println( "ERROR CURSOR NULL" );
-            return;
-        }
-        startManagingCursor( mCursor );
-        if ( mCursor.getCount() == 0 )
-        {
-            System.out.println( "CURSOR EMPTY" );
-            TextView emptyText = ( TextView ) findViewById( android.R.id.empty );
-            switch ( mPositionMenu )
-            {
-            case STATE.ARTIST:
-                emptyText.setText( R.string.empty_artist );
-                break;
-            case STATE.ALBUM:
-                emptyText.setText( R.string.empty_album );
-                break;
-            case STATE.TRACK:
-                emptyText.setText( R.string.empty_track );
-                break;
-            }
-        }
-
-        setListAdapter( adapterFromCursor( id_field, icon_id, text_id, second_text_id, disclosure_id, tokens ) );
-    }
-
-    /**
-     * Helper function that creates a custom ListAdapter from the current
-     * mCursor
-     * 
-     * @param id_field
-     *            the column id that contains the id (track_id, artist_id, etc)
-     * @param icon_id
-     *            the resource id that contains the id of the icon
-     * @param text_id
-     *            the column id that contains the text to be displayed in the
-     *            ListEntry
-     * @param disclosure_id
-     *            the resource id that contains the id of the disclosure icon
-     * @param tokens
-     *            an array of tokens to be used in the indexer
-     * @return
-     */
-    private ListAdapter adapterFromCursor( int id_field, int icon_id, int text_id, int second_text_id, int disclosure_id, String[] tokens )
-    {
-        ArrayList<ListEntry> iconifiedEntries = new ArrayList<ListEntry>();
-        while ( mCursor.moveToNext() )
-        {
-            String second = ""; 
-            if( second_text_id > -1 )
-                second = mCursor.getString( second_text_id );
-            ListEntry entry = new ListEntry( mCursor.getInt( id_field ), icon_id == -1 ? null
-                    : icon_id, mCursor.getString( text_id ), disclosure_id, second );
-            iconifiedEntries.add( entry );
-
-        }
-        ListAdapter adapter = new ListAdapter( LockerList.this );
-        if( tokens == null) {
-            System.out.println("Using alphabet!");
-            tokens = mAlphabet;
-        }
-        System.out.println("final tokens " + tokens.length);
-        AlphabetIndexer indexer = new AlphabetIndexer(mCursor, text_id, tokens);
-        adapter.setIndexer( indexer );
-        adapter.setSourceIconified( iconifiedEntries );
-        return adapter;
-    }
-    
-    private void getAlphabet(Context context) {
-        String alphabetString = context.getResources().getString(R.string.alphabet);
-        mAlphabet = new String[alphabetString.length()];
-        for (int i = 0; i < mAlphabet.length; i++) {
-            mAlphabet[i] = String.valueOf(alphabetString.charAt(i));
-        }
-    }
 
     /**
      * Clears all session data (and the cache), and sends the user back to the
@@ -583,232 +392,6 @@ public class LockerList extends ListActivity implements ServiceConnection
         }
         return null;
 
-    }
-
-    private class RefreshCacheTask extends UserTask<Void, Void, Boolean>
-    {
-        @Override
-        public void onPreExecute()
-        {
-            showDialog( DIALOG_REFRESH );
-        }
-
-        @Override
-        public Boolean doInBackground( Void... params )
-        {
-            try
-            {
-//                Music.sDb.refreshTrCache();
-            }
-            catch ( Exception e )
-            {
-                return false;
-            }
-            return true;
-        }
-
-        @Override
-        public void onPostExecute( Boolean result )
-        {
-            if ( result )
-            {
-                dismissDialog( DIALOG_REFRESH );
-            }
-            else
-            {
-                MP3tunesApplication.getInstance().presentError( getApplicationContext(),
-                        getString( R.string.ERROR_SERVER_UNAVAILABLE_TITLE ),
-                        getString( R.string.ERROR_SERVER_UNAVAILABLE ) );
-                logout();
-            }
-        }
-    }
-    
-    private class FetchArtistsTask extends UserTask<Integer, Void, Boolean>
-    {
-        int sense = -1;
-        String[] tokens= null;
-        @Override
-        public void onPreExecute()
-        {
-            
-        }
-
-        @Override
-        public Boolean doInBackground( Integer... params )
-        {
-            sense = params[0];
-            try
-            {
-                mCursor = Music.sDb.getTableList( Music.Meta.ARTIST );
-                Token[] t = Music.sDb.getTokens( Music.Meta.ARTIST );
-                tokens = LockerDb.tokensToString( t );
-            }
-            catch ( Exception e )
-            {
-                return false;
-            }
-            return true;
-        }
-
-        @Override
-        public void onPostExecute( Boolean result )
-        {
-            // TODO error handling
-            performSlide( sense );
-            mPositionMenu = STATE.ARTIST;
-            handleListSwitch( 0, R.drawable.artist_icon, 1, -1, R.drawable.arrow, tokens );
-        }
-    }
-    
-    /**
-     * Fetches albums async
-     * Takes a Int[]
-     *  0: sense  animate TRANSLATION_RIGHT or TRANSLATION_LEFT
-     *  1: artist_id or -1
-     * @author ramblurr
-     *
-     */
-    private class FetchAlbumsTask extends UserTask<Integer, Void, Boolean>
-    {
-        int sense = -1;
-        String[] tokens= null;
-        @Override
-        public void onPreExecute()
-        {
-            
-        }
-
-        @Override
-        public Boolean doInBackground( Integer... params )
-        {
-            sense = params[0];
-            int artist_id = -1;
-            if(params.length > 1)
-                artist_id = params[1];
-            try
-            {
-                if(artist_id > -1)
-                    mCursor = Music.sDb.getAlbumsForArtist( artist_id );
-                else
-                    mCursor = Music.sDb.getTableList( Music.Meta.ALBUM );
-                
-                Token[] t = Music.sDb.getTokens( Music.Meta.ALBUM );
-                tokens = LockerDb.tokensToString( t );
-            }
-            catch ( Exception e )
-            {
-                return false;
-            }
-            return true;
-        }
-
-        @Override
-        public void onPostExecute( Boolean result )
-        {
-            // TODO error handling
-            performSlide( sense );
-            mPositionMenu = STATE.ALBUM;
-            handleListSwitch( 0, R.drawable.album_icon, 1, 3, R.drawable.arrow, tokens );
-        }
-    }
-    
-    private class FetchTracksTask extends UserTask<Integer, Void, Boolean>
-    {
-        int sense = -1;
-        String[] tokens= null;
-        @Override
-        public void onPreExecute()
-        {
-            
-        }
-
-        @Override
-        public Boolean doInBackground( Integer... params )
-        {
-            sense = params[0];
-            int album_id = -1;
-            if(params.length > 1)
-                album_id = params[1];
-            try
-            {
-                if(album_id > -1)
-                    mCursor = Music.sDb.getTracksForAlbum( album_id );
-                else
-                    mCursor = Music.sDb.getTableList( Music.Meta.TRACK );
-                
-                Token[] t = Music.sDb.getTokens( Music.Meta.TRACK );
-                tokens = LockerDb.tokensToString( t );
-            }
-            catch ( Exception e )
-            {
-                return false;
-            }
-            return true;
-        }
-
-        @Override
-        public void onPostExecute( Boolean result )
-        {
-            performSlide( sense );
-            mPositionMenu = STATE.TRACK;
-            handleListSwitch( 0, R.drawable.song_icon, 1, 2, R.drawable.right_play, tokens );
-        }
-    }
-    
-    private class FetchPlaylistsTask extends UserTask<Integer, Void, Boolean>
-    {
-        int sense = -1;
-        boolean fetching_tracks = false;
-        @Override
-        public void onPreExecute()
-        {
-            
-        }
-
-        @Override
-        public Boolean doInBackground( Integer... params )
-        {
-            sense = params[0];
-            int playlist_id = -1;
-            if(params.length > 1) {
-                playlist_id = params[1];
-                fetching_tracks = true;
-            }
-            try
-            {
-                if(fetching_tracks)
-                    mCursor = Music.sDb.getTracksForPlaylist( playlist_id );
-                else
-                    mCursor = Music.sDb.getTableList( Music.Meta.PLAYLIST );
-            }
-            catch ( Exception e )
-            {
-                return false;
-            }
-            return true;
-        }
-
-        @Override
-        public void onPostExecute( Boolean result )
-        {
-            // TODO error handling
-
-            mPositionMenu = STATE.PLAYLISTS;
-            if( fetching_tracks )
-            {
-                Music.sDb.clearQueue();
-                while( mCursor.moveToNext() ) 
-                {
-                    System.out.println("Got track id "+ mCursor.getInt( 0 ) + " called " + mCursor.getString( 1 )); 
-                    Music.sDb.appendQueueItem( mCursor.getInt( 0 ) );
-                }
-                ((ListAdapter) getListAdapter()).disableLoadBar();
-                showPlayer();
-//                handleListSwitch( 0, R.drawable.song_icon, 1, -1, R.drawable.right_play, null );
-            } else
-                handleListSwitch( 0, R.drawable.playlist_icon, 1, -1, R.drawable.right_play, null );
-        }
     }
     
     private class SearchTask extends UserTask<String, Void, Boolean>

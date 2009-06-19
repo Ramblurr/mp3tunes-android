@@ -691,7 +691,9 @@ public class Mp3tunesService extends Service
 
         public boolean isPlaying() throws RemoteException
         {
-            return mServiceState != STATE.STOPPED;
+            return mServiceState == STATE.PAUSED
+                || mServiceState == STATE.PLAYING
+                || mServiceState == STATE.SKIPPING;
         }
 
         public void next() throws RemoteException

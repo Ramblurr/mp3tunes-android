@@ -23,9 +23,14 @@
 				<category android:name="android.intent.category.DEFAULT"/>
 			</intent-filter>
 		</activity>
-		<activity android:name=".activity.Player" android:label="MP3tunes Locker Player" android:configChanges="keyboardHidden">
+		<activity android:name=".activity.Player" android:label="MP3tunes Locker Player" 
+        android:configChanges="keyboardHidden"
+        android:taskAffinity=""
+        android:launchMode="singleTask"
+        android:clearTaskOnLaunch="true"
+        android:excludeFromRecents="true" >
 			<intent-filter>
-				<action android:name="android.intent.action.VIEW"/>
+				<action android:name="com.mp3tunes.android.PLAYER" />
 				<category android:name="android.intent.category.DEFAULT"/>
 			</intent-filter>
 		</activity>
@@ -35,12 +40,38 @@
                   <category android:name="android.intent.category.DEFAULT"/>
               </intent-filter>
           </activity>
+          <activity android:name=".activity.ArtistBrowser">
+            <intent-filter>
+                <action android:name="android.intent.action.PICK" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="vnd.mp3tunes.android.dir/artist"/>
+            </intent-filter>
+        </activity>
+        <activity android:name=".activity.AlbumBrowser">
+            <intent-filter>
+                <action android:name="android.intent.action.PICK" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="vnd.mp3tunes.android.dir/album"/>
+            </intent-filter>
+        </activity>
           <activity android:name=".activity.QueueBrowser">
             <intent-filter>
                 <action android:name="android.intent.action.EDIT" />
                 <action android:name="android.intent.action.PICK" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <data android:mimeType="vnd.mp3tunes.android.dir/track"/>
+            </intent-filter>
+        </activity>
+        <activity android:name=".activity.PlaylistBrowser">
+            <intent-filter>
+                <action android:name="android.intent.action.PICK" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="vnd.mp3tunes.android.dir/playlist"/>
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="vnd.mp3tunes.android.dir/playlist"/>
             </intent-filter>
         </activity>
         <activity android:name=".activity.UpdateActivity" android:label="@string/update_confirm_title">

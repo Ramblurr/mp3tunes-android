@@ -20,6 +20,7 @@
 package com.mp3tunes.android;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Formatter;
@@ -30,13 +31,17 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.content.res.Resources;
+import android.database.Cursor;
+import android.os.AsyncTask;
 import android.os.IBinder;
 import android.os.RemoteException;
 import android.util.Log;
 import android.view.Window;
+import android.widget.Toast;
 
 import com.binaryelysium.mp3tunes.api.Locker;
 import com.mp3tunes.android.R;
+import com.mp3tunes.android.activity.ArtistBrowser;
 import com.mp3tunes.android.service.ITunesService;
 import com.mp3tunes.android.service.Mp3tunesService;
 
@@ -56,17 +61,28 @@ public class Music
     
     public static String[] TOKEN = { "type", "token", "count" };
     
-    public static String[] ARTIST = { "_id", "artist_name" };
+    public static String[] ARTIST = { "_id", "artist_name", "album_count", "track_count" };
     
     public static String[] PLAYLIST = { "_id", "playlist_name", "file_count", "file_name" };
     
     public static String[] ALBUM  = { "_id","album_name", "artist_id", "artist_name", "track_count", "cover_url" };
 
   //This mapping corresponds to the field indexes above
+    public static final class PLAYLIST_MAPPING 
+    {
+        public static final int ID = 0;
+        public static final int PLAYLIST_NAME = 1;
+        public static final int FILE_COUNT = 2;
+        public static final int FILE_NAME = 3;
+    }
+    
+    //This mapping corresponds to the field indexes above
     public static final class ARTIST_MAPPING 
     {
         public static final int ID = 0;
         public static final int ARTIST_NAME = 1;
+        public static final int ALBUM_COUNT = 2;
+        public static final int TRACK_COUNT = 3;
     }
     
     //This mapping corresponds to the field indexes above
@@ -81,7 +97,10 @@ public class Music
     }
     
     public static String[] TRACK = { "_id", "title", "artist_name", "artist_id", "album_name", "album_id",
-            "track", "play_url", "download_url", "cover_url" };
+            "track", "play_url", "download_url", "track_length", "cover_url" };
+    public static String[] TRACKP = { "track._id", "title", "artist_name", "artist_id", "album_name", "album_id",
+        "track", "play_url", "download_url", "track_length", "cover_url" };
+    public static int[] TRACKP_MAPPING = { 0,1,2,3,4,5,6,7,8,9,10};
 
     //This mapping corresponds to the field indexes above
     public static final class TRACK_MAPPING 
@@ -95,7 +114,8 @@ public class Music
         public static final int TRACKNUM = 6;
         public static final int PLAY_URL = 7;
         public static final int DOWNLOAD_URL = 8;
-        public static final int COVER_URL = 9;
+        public static final int TRACK_LENGTH = 9;
+        public static final int COVER_URL = 10;
     }
     
     
@@ -240,5 +260,191 @@ public class Music
         timeArgs[4] = secs % 60;
 
         return sFormatter.format(durationformat, timeArgs).toString();
+    }
+    
+    public interface Defs {
+        public final static int OPEN_URL = 0;
+        public final static int ADD_TO_PLAYLIST = 1;
+        public final static int USE_AS_RINGTONE = 2;
+        public final static int PLAYLIST_SELECTED = 3;
+        public final static int NEW_PLAYLIST = 4;
+        public final static int PLAY_SELECTION = 5;
+        public final static int GOTO_START = 6;
+        public final static int GOTO_PLAYBACK = 7;
+        public final static int PARTY_SHUFFLE = 8;
+        public final static int SHUFFLE_ALL = 9;
+        public final static int DELETE_ITEM = 10;
+        public final static int SCAN_DONE = 11;
+        public final static int QUEUE = 12;
+        public final static int CHILD_MENU_BASE = 13; // this should be the last item
+    }
+    
+    public static void setSpinnerState(Activity a, boolean visible) {
+        if( visible ) {
+            // start the progress spinner
+            a.getWindow().setFeatureInt(
+                    Window.FEATURE_INDETERMINATE_PROGRESS,
+                    Window.PROGRESS_INDETERMINATE_ON);
+
+            a.getWindow().setFeatureInt(
+                    Window.FEATURE_INDETERMINATE_PROGRESS,
+                    Window.PROGRESS_VISIBILITY_ON);
+        } else {
+            // stop the progress spinner
+            a.getWindow().setFeatureInt(
+                    Window.FEATURE_INDETERMINATE_PROGRESS,
+                    Window.PROGRESS_VISIBILITY_OFF);
+        }
+    }
+    
+    public static String makeAlbumsLabel(Context context, int numalbums, int numsongs, boolean isUnknown) {
+        // There are two formats for the albums/songs information:
+        // "N Song(s)"  - used for unknown artist/album
+        // "N Album(s)" - used for known albums
+        
+        StringBuilder songs_albums = new StringBuilder();
+
+        Resources r = context.getResources();
+        if (isUnknown) {
+            if (numsongs == 1) {
+                songs_albums.append(context.getString(R.string.onesong));
+            } else {
+                String f = r.getQuantityText(R.plurals.Nsongs, numsongs).toString();
+                sFormatBuilder.setLength(0);
+                sFormatter.format(f, Integer.valueOf(numsongs));
+                songs_albums.append(sFormatBuilder);
+            }
+        } else {
+            String f = r.getQuantityText(R.plurals.Nalbums, numalbums).toString();
+            sFormatBuilder.setLength(0);
+            sFormatter.format(f, Integer.valueOf(numalbums));
+            songs_albums.append(sFormatBuilder);
+            songs_albums.append(context.getString(R.string.albumsongseparator));
+        }
+        return songs_albums.toString();
+    }
+    
+    /*
+     * Returns true if a track is currently opened for playback (regardless
+     * of whether it's playing or paused).
+     */
+    public static boolean isMusicPlaying() {
+        if (sService != null) {
+            try {
+                return sService.isPlaying();
+            } catch (RemoteException ex) {
+            }
+        }
+        return false;
+    }
+    
+    public static int getCurrentAlbumId() {
+        if (sService != null) {
+            try {
+                String id = sService.getMetadata()[5];
+                if( id != Mp3tunesService.UNKNOWN )
+                    return Integer.parseInt( id );
+            } catch (RemoteException ex) {
+            }
+        }
+        return -1;
+    }
+    public static int getCurrentArtistId() {
+        if (sService != null) {
+            try {
+                String id = sService.getMetadata()[3];
+                if( id != Mp3tunesService.UNKNOWN )
+                    return Integer.parseInt( id );
+            } catch (RemoteException ex) {
+            }
+        }
+        return -1;
+    }
+    public static int getCurrentTrackId() {
+        if (sService != null) {
+            try {
+                String id = sService.getMetadata()[1];
+                if( id != Mp3tunesService.UNKNOWN )
+                    return Integer.parseInt( id );
+            } catch (RemoteException ex) {
+            }
+        }
+        return -1;
+    }
+    public static int getCurrentQueuePosition() {
+        if (sService != null) {
+            try {
+                return sService.getQueuePosition();
+            } catch (RemoteException ex) {
+            }
+        }
+        return -1;
+    }
+    
+    public static void playAll(Context context, Cursor cursor, int position) {
+        playAll(context, cursor, position, false);
+    }
+    
+    private static void playAll(Context context, Cursor cursor, int position, boolean force_shuffle) {
+        
+        int [] list = getSongListForCursor(cursor);
+        System.out.println("list " + list.length);
+        playAll(context, list, position, force_shuffle);
+    }
+    
+    private static void playAll(Context context, int [] list, int position, boolean force_shuffle) {
+        if (list.length == 0 || sService == null || sDb == null) {
+            Log.d("MusicUtils", "attempt to play empty song list");
+            // Don't try to play empty playlists. Nothing good will come of it.
+            String message = context.getString(R.string.emptyplaylist, list.length);
+            Toast.makeText(context, message, Toast.LENGTH_SHORT).show();
+            return;
+        }
+        try {
+            if (force_shuffle) {
+                sService.setShuffleMode(Music.ShuffleMode.TRACKS);
+            }
+            int curid = getCurrentTrackId();
+            int curpos = sService.getQueuePosition();
+            if (position != -1 && curpos == position && curid == list[position]) {
+                // The selected file is the file that's currently playing;
+                // figure out if we need to restart with a new playlist,
+                // or just launch the playback activity.
+                int [] playlist = sDb.getQueue();
+                if (Arrays.equals(list, playlist)) {
+                    // we don't need to set a new list, but we should resume playback if needed
+                    sService.pause();
+                    return; // the 'finally' block will still run
+                }
+            }
+            if (position < 0) {
+                position = 0;
+            }
+            Music.sDb.clearQueue();
+            Music.sDb.insertQueueItems( list );
+            sService.start();
+        } catch (RemoteException ex) {
+        } finally {
+            Intent intent = new Intent("com.mp3tunes.android.PLAYER")
+                .setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+            context.startActivity(intent);
+        }
+    }
+    
+    private final static int [] sEmptyList = new int[0];
+    
+    public static int [] getSongListForCursor(Cursor cursor) {
+        if (cursor == null) {
+            return sEmptyList;
+        }
+        int len = cursor.getCount();
+        int [] list = new int[len];
+        cursor.moveToFirst();
+        int colidx = Music.TRACK_MAPPING.ID;
+        for (int i = 0; i < len; i++) {
+            list[i] = cursor.getInt(colidx);
+            cursor.moveToNext();
+        }
+        return list;
     }
 }
