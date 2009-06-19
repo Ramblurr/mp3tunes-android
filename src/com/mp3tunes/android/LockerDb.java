@@ -95,239 +95,6 @@ public class LockerDb
         mDb.delete( "current_playlist", null, null );
     }
 
-    /**
-     * Inserts a track into the database cache
-     * @param track
-     * @throws IOException
-     * @throws SQLiteException
-     */
-    public void insertTrack( Track track ) throws IOException, SQLiteException
-    {
-
-        if ( track == null )
-        {
-            System.out.println( "OMG TRACK NULL" );
-            return;
-        }
-        mDb.execSQL( "BEGIN TRANSACTION" );
-        try
-        {
-            if ( track.getArtistName().length() > 0 )
-            {
-                ContentValues cv = new ContentValues( 2 );
-                cv.put( "_id", track.getArtistId() );
-                cv.put( "artist_name", track.getArtistName() );
-
-                Cursor c = mDb.query( "artist", Music.ID, "_id='"
-                        + track.getArtistId() + "'", null, null, null, null );
-                if ( !c.moveToNext() )
-                    mDb.insert( "artist", UNKNOWN_STRING, cv );
-                c.close();
-            }
-            /*
-             * TODO determine whether the fancy ContentValues means of
-             * performing queries is faster than the regular rawQuery + string a
-             * concatentation method.
-             */
-            if ( track.getAlbumTitle().length() > 0 )
-            {
-                ContentValues cv = new ContentValues( 2 );
-                cv.put( "_id", track.getAlbumId() );
-                cv.put( "album_name", track.getAlbumTitle() );
-                cv.put( "artist_id", track.getArtistId() );
-                Cursor c = mDb.query( "album", Music.ID, "_id='" + track.getAlbumId()
-                        + "'", null, null, null, null );
-                // Cursor c =
-                // mDb.rawQuery("SELECT _id FROM album WHERE _id='"+track.getAlbumId()+"'"
-                // ,null);
-                if ( !c.moveToNext() )
-                    mDb.insert( "album", UNKNOWN_STRING, cv );
-                // mDb.execSQL("INSERT INTO album(_id, album_name) VALUES("+track.getAlbumId()+", '"+track.getAlbumTitle()+"')");
-                c.close();
-            }
-
-            Cursor c = mDb.query( "track", Music.ID, "_id='" + track.getId() + "'",
-                    null, null, null, null );
-            if ( !c.moveToNext() )
-            {
-                ContentValues cv = new ContentValues( 7 );
-                cv.put( "_id", track.getId() );
-                cv.put( "play_url", track.getPlayUrl() );
-                cv.put( "download_url", track.getDownloadUrl() );
-                cv.put( "title", track.getTitle() );
-                cv.put( "track", track.getNumber() );
-                cv.put( "artist_name", track.getArtistName() );
-                cv.put( "album_name", track.getAlbumTitle() );
-                cv.put( "artist_id", track.getArtistId() );
-                cv.put( "album_id", track.getAlbumId() );
-                cv.put( "track_length", track.getDuration() );
-                cv.put( "cover_url", track.getAlbumArt() );
-                mDb.insert( "track", UNKNOWN_STRING, cv );
-            }
-            c.close();
-
-            mDb.execSQL( "COMMIT TRANSACTION" );
-
-        }
-        catch ( SQLiteException e )
-        {
-            mDb.execSQL( "ROLLBACK" );
-            throw e;
-        }
-    }
-    
-    /**
-     * 
-     * @param artist
-     * @throws IOException
-     * @throws SQLiteException
-     */
-    public void insertArtist( Artist artist) throws IOException, SQLiteException
-    {
-        if ( artist == null )
-        {
-            System.out.println( "OMG Artist NULL" );
-            return;
-        }
-        try
-        {
-            if ( artist.getName().length() > 0 )
-            {
-                ContentValues cv = new ContentValues( 2 );
-                cv.put( "_id", artist.getId() );
-                cv.put( "artist_name", artist.getName() );
-                cv.put( "album_count", artist.getAlbumCount() );
-                cv.put( "track_count", artist.getTrackCount() );
-
-                Cursor c = mDb.query( "artist", Music.ID, "_id='"
-                        + artist.getId() + "'", null, null, null, null );
-                if ( !c.moveToNext() ) // artist doesn't exist
-                    mDb.insert( "artist", UNKNOWN_STRING, cv );
-                else // artist exists, so lets update with new data
-                {
-                    cv.remove( "_id" );
-                    mDb.update( "artist", cv, "_id='" + artist.getId() + "'", null );
-                }
-                c.close();
-            }
-        }
-        catch ( SQLiteException e )
-        {
-            throw e;
-        }
-    }
-    
-    public void insertAlbum( Album album) throws IOException, SQLiteException
-    {
-        if ( album == null )
-        {
-            System.out.println( "OMG Album NULL" );
-            return;
-        }
-        try
-        {
-            if ( album.getName().length() > 0 )
-            {
-                ContentValues cv = new ContentValues( 2 );
-                cv.put( "_id", album.getId() );
-                cv.put( "album_name", album.getName() );
-                cv.put( "artist_name", album.getArtistName() );
-                cv.put( "artist_id", album.getArtistId() );
-                cv.put( "year", album.getYear() );
-                cv.put( "track_count", album.getTrackCount() );
-
-                Cursor c = mDb.query( "album", Music.ID, "_id='"
-                        + album.getId() + "'", null, null, null, null );
-
-                if ( !c.moveToNext() ) // album doesn't exist
-                    mDb.insert( "album", UNKNOWN_STRING, cv );
-                else // album exists, so lets update with new data
-                {
-                    cv.remove( "_id" );
-                    mDb.update( "album", cv, "_id='" + album.getId() + "'", null );
-                }
-
-                c.close();
-            }
-        }
-        catch ( SQLiteException e )
-        {
-            throw e;
-        }
-    }
-    
-    public void insertPlaylist( Playlist playlist) throws IOException, SQLiteException
-    {
-        if ( playlist == null )
-        {
-            System.out.println( "OMG Playlist NULL" );
-            return;
-        }
-        try
-        {
-            if ( playlist.getName().length() > 0 )
-            {
-                ContentValues cv = new ContentValues( 2 );
-                cv.put( "_id", playlist.getId() );
-                cv.put( "playlist_name", playlist.getName() );
-                cv.put( "file_count", playlist.getCount() );
-                cv.put( "file_name", playlist.getFileName() );
-
-                Cursor c = mDb.query( "playlist", Music.ID, "_id='"
-                        + playlist.getId() + "'", null, null, null, null );
-
-                if ( !c.moveToNext() ) // album doesn't exist
-                    mDb.insert( "playlist", UNKNOWN_STRING, cv );
-                else // album exists, so lets update with new data
-                {
-                    cv.remove( "_id" );
-                    mDb.update( "playlist", cv, "_id='" + playlist.getId() + "'", null );
-                }
-
-                c.close();
-            }
-        }
-        catch ( SQLiteException e )
-        {
-            throw e;
-        }
-    }
-    
-    public void insertToken( Token token, String type ) throws IOException, SQLiteException
-    {
-        if ( token == null )
-        {
-            System.out.println( "OMG Token NULL" );
-            return;
-        }
-        try
-        {
-            if ( token.getToken().length() > 0 )
-            {
-                ContentValues cv = new ContentValues( 2 );
-                cv.put( "type", type );
-                cv.put( "token", token.getToken() );
-                cv.put( "count", token.getCount() );
-
-                Cursor c = mDb.query( "token", new String[] { "token" }, "type='"
-                        + type + "' AND token='"+token.getToken()+"'", null, null, null, null );
-
-                if ( !c.moveToNext() ) // album doesn't exist
-                    mDb.insert( "token", UNKNOWN_STRING, cv );
-                else // album exists, so lets update with new data
-                {
-                    mDb.update( "token", cv, "type='" + type + "' AND token='"+token.getToken()+"'", null );
-                }
-
-                c.close();
-            }
-        }
-        catch ( SQLiteException e )
-        {
-            throw e;
-        }
-    }
-
     public Cursor getTableList( Music.Meta type )
     {
         try
@@ -415,94 +182,6 @@ public class LockerDb
         return null;
     }
     
-    private Cursor queryTokens( String type )
-    {
-        return mDb.query( "token", Music.TOKEN, "type='"+type+"'", null, null, null, Music.TOKEN[1] );   
-    }
-    
-    private Cursor queryPlaylists()
-    {
-        return mDb.query( "playlist", Music.PLAYLIST, null, null, null, null, "lower("+Music.PLAYLIST[1]+")" );   
-    }
-    
-    private Cursor queryPlaylists( int playlist_id )
-    {
-        String selection = "track._id _id, title, artist_name, artist_id, album_name, album_id, track, play_url, download_url, track_length, cover_url";
-//        String table = "playlist " + "JOIN playlist_tracks ON playlist._id = playlist_tracks.playlist_id "
-//                    + "JOIN track ON playlist_tracks.track_id = track._id" +
-//                            "";  
-//        String where =  "playlist_id="+playlist_id;
-//        return mDb.query( true, table, Music.TRACK, where, null, null, null, null, null );
-        return mDb.rawQuery( 
-                "SELECT DISTINCT " + selection + " FROM playlist " +
-                "JOIN playlist_tracks ON playlist._id = playlist_tracks.playlist_id " +
-                "JOIN track ON playlist_tracks.track_id = track._id " +
-                "WHERE playlist_id="+playlist_id, null );
-   
-    }
-    
-    private Cursor queryArtists()
-    {
-        return mDb.query( "artist", Music.ARTIST, null, null, null, null, "lower("+Music.ARTIST[1]+")" );   
-    }
-    
-    private Cursor queryAlbums()
-    {
-        return mDb.query( "album", Music.ALBUM, null, null, null, null, "lower("+Music.ALBUM[Music.ALBUM_MAPPING.ALBUM_NAME]+")" );
-    }
-    
-    private Cursor queryAlbums( int artist_id )
-    {
-        return  mDb.query( "album", Music.ALBUM, "artist_id=" + artist_id,
-                null, null, null, "lower("+Music.ALBUM[Music.ALBUM_MAPPING.ALBUM_NAME]+")" );  
-    }
-    
-    private Cursor queryTracks()
-    {
-        return mDb.query( "track", Music.TRACK, null, null, null, null, "lower("+Music.TRACK[Music.TRACK_MAPPING.TITLE]+")" );
-    }
-
-    private Cursor queryTracksArtist( int artist_id )
-    {
-        return mDb.query( "track", Music.TRACK, "artist_id=" + artist_id, null, null, null, "lower("+Music.TRACK[Music.TRACK_MAPPING.TRACKNUM]+")" );
-    }
-    
-    private Cursor queryTracksAlbum( int album_id )
-    {
-        return mDb.query( "track", Music.TRACK, "album_id=" + album_id, null, null, null, "lower("+Music.TRACK[Music.TRACK_MAPPING.TRACKNUM]+")" );
-    }
-    
-    private Cursor querySearch( String query, Music.Meta type )
-    {
-        String table;
-        String[] columns;
-        String selection;
-//        String sort;
-        switch ( type )
-        {
-            case TRACK:
-                table = "track";
-                columns = Music.TRACK;
-                selection = "lower(title) LIKE lower('%"+query+"%')";
-//                selection = "MATCH (title) AGAINST ('+"+query+"' IN BOOLEAN MODE)";
-                break;
-            case ARTIST:
-                table = "artist";
-                columns = Music.ARTIST;
-//                selection = "MATCH (artist_name) AGAINST ('+"+query+"' IN BOOLEAN MODE)";
-                selection = "lower(artist_name) LIKE lower('%"+query+"%')";
-                break;
-            case ALBUM:
-                table = "album";
-                columns = Music.ALBUM;
-                selection = "lower(album_name) LIKE lower('%"+query+"%')";
-//                selection = "MATCH (album_name) AGAINST ('+"+query+"' IN BOOLEAN MODE)";
-                break;
-            default: return null;
-        }
-        return mDb.query( table, columns, selection, null, null, null, null, null);
-    }
-
     /**
      * 
      * @param albumId
@@ -795,7 +474,7 @@ public class LockerDb
      * Insert an entire artist into the playlist.
      * @param id the artist id
      */
-    public void insertArtistPlaylist( int id )
+    public void insertArtistQueue( int id )
     {
         mDb.execSQL("INSERT INTO current_playlist(track_id) " +
                 "SELECT track._id FROM track " +
@@ -930,7 +609,240 @@ public class LockerDb
         mDb.execSQL("DELETE FROM current_playlist");
     }
     
-    public void refreshTracks() throws SQLiteException, IOException
+    /**
+     * Inserts a track into the database cache
+     * @param track
+     * @throws IOException
+     * @throws SQLiteException
+     */
+    private void insertTrack( Track track ) throws IOException, SQLiteException
+    {
+    
+        if ( track == null )
+        {
+            System.out.println( "OMG TRACK NULL" );
+            return;
+        }
+        mDb.execSQL( "BEGIN TRANSACTION" );
+        try
+        {
+            if ( track.getArtistName().length() > 0 )
+            {
+                ContentValues cv = new ContentValues( 2 );
+                cv.put( "_id", track.getArtistId() );
+                cv.put( "artist_name", track.getArtistName() );
+    
+                Cursor c = mDb.query( "artist", Music.ID, "_id='"
+                        + track.getArtistId() + "'", null, null, null, null );
+                if ( !c.moveToNext() )
+                    mDb.insert( "artist", UNKNOWN_STRING, cv );
+                c.close();
+            }
+            /*
+             * TODO determine whether the fancy ContentValues means of
+             * performing queries is faster than the regular rawQuery + string a
+             * concatentation method.
+             */
+            if ( track.getAlbumTitle().length() > 0 )
+            {
+                ContentValues cv = new ContentValues( 2 );
+                cv.put( "_id", track.getAlbumId() );
+                cv.put( "album_name", track.getAlbumTitle() );
+                cv.put( "artist_id", track.getArtistId() );
+                Cursor c = mDb.query( "album", Music.ID, "_id='" + track.getAlbumId()
+                        + "'", null, null, null, null );
+                // Cursor c =
+                // mDb.rawQuery("SELECT _id FROM album WHERE _id='"+track.getAlbumId()+"'"
+                // ,null);
+                if ( !c.moveToNext() )
+                    mDb.insert( "album", UNKNOWN_STRING, cv );
+                // mDb.execSQL("INSERT INTO album(_id, album_name) VALUES("+track.getAlbumId()+", '"+track.getAlbumTitle()+"')");
+                c.close();
+            }
+    
+            Cursor c = mDb.query( "track", Music.ID, "_id='" + track.getId() + "'",
+                    null, null, null, null );
+            if ( !c.moveToNext() )
+            {
+                ContentValues cv = new ContentValues( 7 );
+                cv.put( "_id", track.getId() );
+                cv.put( "play_url", track.getPlayUrl() );
+                cv.put( "download_url", track.getDownloadUrl() );
+                cv.put( "title", track.getTitle() );
+                cv.put( "track", track.getNumber() );
+                cv.put( "artist_name", track.getArtistName() );
+                cv.put( "album_name", track.getAlbumTitle() );
+                cv.put( "artist_id", track.getArtistId() );
+                cv.put( "album_id", track.getAlbumId() );
+                cv.put( "track_length", track.getDuration() );
+                cv.put( "cover_url", track.getAlbumArt() );
+                mDb.insert( "track", UNKNOWN_STRING, cv );
+            }
+            c.close();
+    
+            mDb.execSQL( "COMMIT TRANSACTION" );
+    
+        }
+        catch ( SQLiteException e )
+        {
+            mDb.execSQL( "ROLLBACK" );
+            throw e;
+        }
+    }
+
+    /**
+     * 
+     * @param artist
+     * @throws IOException
+     * @throws SQLiteException
+     */
+    private void insertArtist( Artist artist) throws IOException, SQLiteException
+    {
+        if ( artist == null )
+        {
+            System.out.println( "OMG Artist NULL" );
+            return;
+        }
+        try
+        {
+            if ( artist.getName().length() > 0 )
+            {
+                ContentValues cv = new ContentValues( 2 );
+                cv.put( "_id", artist.getId() );
+                cv.put( "artist_name", artist.getName() );
+                cv.put( "album_count", artist.getAlbumCount() );
+                cv.put( "track_count", artist.getTrackCount() );
+    
+                Cursor c = mDb.query( "artist", Music.ID, "_id='"
+                        + artist.getId() + "'", null, null, null, null );
+                if ( !c.moveToNext() ) // artist doesn't exist
+                    mDb.insert( "artist", UNKNOWN_STRING, cv );
+                else // artist exists, so lets update with new data
+                {
+                    cv.remove( "_id" );
+                    mDb.update( "artist", cv, "_id='" + artist.getId() + "'", null );
+                }
+                c.close();
+            }
+        }
+        catch ( SQLiteException e )
+        {
+            throw e;
+        }
+    }
+
+    private void insertAlbum( Album album) throws IOException, SQLiteException
+    {
+        if ( album == null )
+        {
+            System.out.println( "OMG Album NULL" );
+            return;
+        }
+        try
+        {
+            if ( album.getName().length() > 0 )
+            {
+                ContentValues cv = new ContentValues( 2 );
+                cv.put( "_id", album.getId() );
+                cv.put( "album_name", album.getName() );
+                cv.put( "artist_name", album.getArtistName() );
+                cv.put( "artist_id", album.getArtistId() );
+                cv.put( "year", album.getYear() );
+                cv.put( "track_count", album.getTrackCount() );
+    
+                Cursor c = mDb.query( "album", Music.ID, "_id='"
+                        + album.getId() + "'", null, null, null, null );
+    
+                if ( !c.moveToNext() ) // album doesn't exist
+                    mDb.insert( "album", UNKNOWN_STRING, cv );
+                else // album exists, so lets update with new data
+                {
+                    cv.remove( "_id" );
+                    mDb.update( "album", cv, "_id='" + album.getId() + "'", null );
+                }
+    
+                c.close();
+            }
+        }
+        catch ( SQLiteException e )
+        {
+            throw e;
+        }
+    }
+
+    private void insertPlaylist( Playlist playlist) throws IOException, SQLiteException
+    {
+        if ( playlist == null )
+        {
+            System.out.println( "OMG Playlist NULL" );
+            return;
+        }
+        try
+        {
+            if ( playlist.getName().length() > 0 )
+            {
+                ContentValues cv = new ContentValues( 2 );
+                cv.put( "_id", playlist.getId() );
+                cv.put( "playlist_name", playlist.getName() );
+                cv.put( "file_count", playlist.getCount() );
+                cv.put( "file_name", playlist.getFileName() );
+    
+                Cursor c = mDb.query( "playlist", Music.ID, "_id='"
+                        + playlist.getId() + "'", null, null, null, null );
+    
+                if ( !c.moveToNext() ) // album doesn't exist
+                    mDb.insert( "playlist", UNKNOWN_STRING, cv );
+                else // album exists, so lets update with new data
+                {
+                    cv.remove( "_id" );
+                    mDb.update( "playlist", cv, "_id='" + playlist.getId() + "'", null );
+                }
+    
+                c.close();
+            }
+        }
+        catch ( SQLiteException e )
+        {
+            throw e;
+        }
+    }
+
+    private void insertToken( Token token, String type ) throws IOException, SQLiteException
+    {
+        if ( token == null )
+        {
+            System.out.println( "OMG Token NULL" );
+            return;
+        }
+        try
+        {
+            if ( token.getToken().length() > 0 )
+            {
+                ContentValues cv = new ContentValues( 2 );
+                cv.put( "type", type );
+                cv.put( "token", token.getToken() );
+                cv.put( "count", token.getCount() );
+    
+                Cursor c = mDb.query( "token", new String[] { "token" }, "type='"
+                        + type + "' AND token='"+token.getToken()+"'", null, null, null, null );
+    
+                if ( !c.moveToNext() ) // album doesn't exist
+                    mDb.insert( "token", UNKNOWN_STRING, cv );
+                else // album exists, so lets update with new data
+                {
+                    mDb.update( "token", cv, "type='" + type + "' AND token='"+token.getToken()+"'", null );
+                }
+    
+                c.close();
+            }
+        }
+        catch ( SQLiteException e )
+        {
+            throw e;
+        }
+    }
+
+    private void refreshTracks() throws SQLiteException, IOException
     {
         DataResult<Track> results = mLocker.getTracks();
         System.out.println( "beginning insertion of " + results.getData().length + " tracks" );
@@ -1095,6 +1007,94 @@ public class LockerDb
         mCache.setUpdate( System.currentTimeMillis(), cachetype );
     }
     
+    private Cursor queryTokens( String type )
+    {
+        return mDb.query( "token", Music.TOKEN, "type='"+type+"'", null, null, null, Music.TOKEN[1] );   
+    }
+
+    private Cursor queryPlaylists()
+    {
+        return mDb.query( "playlist", Music.PLAYLIST, null, null, null, null, "lower("+Music.PLAYLIST[1]+")" );   
+    }
+
+    private Cursor queryPlaylists( int playlist_id )
+        {
+            String selection = "track._id _id, title, artist_name, artist_id, album_name, album_id, track, play_url, download_url, track_length, cover_url";
+    //        String table = "playlist " + "JOIN playlist_tracks ON playlist._id = playlist_tracks.playlist_id "
+    //                    + "JOIN track ON playlist_tracks.track_id = track._id" +
+    //                            "";  
+    //        String where =  "playlist_id="+playlist_id;
+    //        return mDb.query( true, table, Music.TRACK, where, null, null, null, null, null );
+            return mDb.rawQuery( 
+                    "SELECT DISTINCT " + selection + " FROM playlist " +
+                    "JOIN playlist_tracks ON playlist._id = playlist_tracks.playlist_id " +
+                    "JOIN track ON playlist_tracks.track_id = track._id " +
+                    "WHERE playlist_id="+playlist_id, null );
+       
+        }
+
+    private Cursor queryArtists()
+    {
+        return mDb.query( "artist", Music.ARTIST, null, null, null, null, "lower("+Music.ARTIST[1]+")" );   
+    }
+
+    private Cursor queryAlbums()
+    {
+        return mDb.query( "album", Music.ALBUM, null, null, null, null, "lower("+Music.ALBUM[Music.ALBUM_MAPPING.ALBUM_NAME]+")" );
+    }
+
+    private Cursor queryAlbums( int artist_id )
+    {
+        return  mDb.query( "album", Music.ALBUM, "artist_id=" + artist_id,
+                null, null, null, "lower("+Music.ALBUM[Music.ALBUM_MAPPING.ALBUM_NAME]+")" );  
+    }
+
+    private Cursor queryTracks()
+    {
+        return mDb.query( "track", Music.TRACK, null, null, null, null, "lower("+Music.TRACK[Music.TRACK_MAPPING.TITLE]+")" );
+    }
+
+    private Cursor queryTracksArtist( int artist_id )
+    {
+        return mDb.query( "track", Music.TRACK, "artist_id=" + artist_id, null, null, null, "lower("+Music.TRACK[Music.TRACK_MAPPING.TRACKNUM]+")" );
+    }
+
+    private Cursor queryTracksAlbum( int album_id )
+    {
+        return mDb.query( "track", Music.TRACK, "album_id=" + album_id, null, null, null, "lower("+Music.TRACK[Music.TRACK_MAPPING.TRACKNUM]+")" );
+    }
+
+    private Cursor querySearch( String query, Music.Meta type )
+        {
+            String table;
+            String[] columns;
+            String selection;
+    //        String sort;
+            switch ( type )
+            {
+                case TRACK:
+                    table = "track";
+                    columns = Music.TRACK;
+                    selection = "lower(title) LIKE lower('%"+query+"%')";
+    //                selection = "MATCH (title) AGAINST ('+"+query+"' IN BOOLEAN MODE)";
+                    break;
+                case ARTIST:
+                    table = "artist";
+                    columns = Music.ARTIST;
+    //                selection = "MATCH (artist_name) AGAINST ('+"+query+"' IN BOOLEAN MODE)";
+                    selection = "lower(artist_name) LIKE lower('%"+query+"%')";
+                    break;
+                case ALBUM:
+                    table = "album";
+                    columns = Music.ALBUM;
+                    selection = "lower(album_name) LIKE lower('%"+query+"%')";
+    //                selection = "MATCH (album_name) AGAINST ('+"+query+"' IN BOOLEAN MODE)";
+                    break;
+                default: return null;
+            }
+            return mDb.query( table, columns, selection, null, null, null, null, null);
+        }
+
     public static String[] tokensToString( Token[] tokens )
     {
         String[] list  = new String[tokens.length];
