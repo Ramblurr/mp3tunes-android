@@ -306,7 +306,6 @@ public class LockerList extends ListActivity implements ServiceConnection
      */
     private void refreshMenu( int pos )
     {
-        (( ListAdapter ) getListAdapter()).enableLoadBar( pos );
         if ( mPositionMenu == STATE.MAIN )
         {
             mPositionRow = pos;
