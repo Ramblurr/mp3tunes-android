@@ -33,8 +33,6 @@ import android.media.AudioManager;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
-import android.os.Handler;
-import android.os.Message;
 import android.provider.MediaStore;
 import android.view.ContextMenu;
 import android.view.Menu;
@@ -44,26 +42,23 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.Window;
 import android.view.ContextMenu.ContextMenuInfo;
-import android.widget.Adapter;
 import android.widget.AlphabetIndexer;
-import android.widget.CursorAdapter;
 import android.widget.ImageView;
-import android.widget.ListAdapter;
 import android.widget.ListView;
 import android.widget.SectionIndexer;
 import android.widget.SimpleCursorAdapter;
 import android.widget.TextView;
 import android.widget.AdapterView.AdapterContextMenuInfo;
 
-import com.binaryelysium.mp3tunes.api.Locker;
 import com.binaryelysium.mp3tunes.api.Token;
 import com.mp3tunes.android.LockerDb;
-import com.mp3tunes.android.MP3tunesApplication;
 import com.mp3tunes.android.Music;
 import com.mp3tunes.android.MusicAlphabetIndexer;
 import com.mp3tunes.android.R;
 import com.mp3tunes.android.service.Mp3tunesService;
-import com.mp3tunes.android.util.UserTask;
+import com.mp3tunes.android.util.ImageCache;
+import com.mp3tunes.android.util.ImageDownloader;
+import com.mp3tunes.android.util.ImageDownloaderListener;
 
 import java.text.Collator;
 
@@ -76,6 +71,7 @@ public class AlbumBrowser extends ListActivity
     private Cursor mAlbumCursor;
     private String mArtistId;
     private AlbumListAdapter mAdapter;
+    private AsyncTask mArtFetcher;
     private boolean mAdapterSent;
     private final static int SEARCH = CHILD_MENU_BASE;
 
@@ -136,6 +132,12 @@ public class AlbumBrowser extends ListActivity
     
     @Override
     public void onSaveInstanceState(Bundle outcicle) {
+        if( mArtFetcher != null && mArtFetcher.getStatus() == AsyncTask.Status.RUNNING)
+        {
+            mArtFetcher.cancel(true);
+            outcicle.putBoolean( "artfetch_in_progress", true );
+            mArtFetcher = null;
+        }
         // need to store the selected item so we don't lose it in case
         // of an orientation switch. Otherwise we could lose it while
         // in the middle of specifying a playlist to add the item to.
@@ -146,6 +148,11 @@ public class AlbumBrowser extends ListActivity
 
     @Override
     public void onDestroy() {
+        if( mArtFetcher != null && mArtFetcher.getStatus() == AsyncTask.Status.RUNNING)
+        {
+            mArtFetcher.cancel(true);
+            mArtFetcher = null;
+        }
         Music.unbindFromService(this);
         Music.unconnectFromDb( this );
         if (!mAdapterSent) {
@@ -438,7 +445,7 @@ public class AlbumBrowser extends ListActivity
         return ret;
     }
     
-    static class AlbumListAdapter extends SimpleCursorAdapter implements SectionIndexer {
+    static class AlbumListAdapter extends SimpleCursorAdapter implements SectionIndexer, ImageDownloaderListener{
         
         private final Drawable mNowPlayingOverlay;
         private final BitmapDrawable mDefaultAlbumIcon;
@@ -460,6 +467,9 @@ public class AlbumBrowser extends ListActivity
         private AsyncQueryHandler mQueryHandler;
         private String mConstraint = null;
         private boolean mConstraintIsValid = false;
+        
+        protected transient ImageCache mImageCache;
+        protected transient ImageDownloader mImageDownloader;
         
         class ViewHolder {
             TextView line1;
@@ -568,16 +578,10 @@ public class AlbumBrowser extends ListActivity
             vh.line2.setText(displayname);
 
             ImageView iv = vh.icon;
-            // We don't actually need the path to the thumbnail file,
-            // we just use it to see if there is album art or not
-//            String art = cursor.getString(mAlbumArtIndex);
-//            if (unknown || art == null || art.length() == 0) {
-                iv.setImageDrawable(null);
-//            } else {
-//                int artIndex = cursor.getInt(0);
-//                Drawable d = Music.getCachedArtwork(context, artIndex, mDefaultAlbumIcon);
-//                iv.setImageDrawable(d);
-//            }
+            iv.setImageDrawable( null );
+            name = cursor.getString(mAlbumIdIdx);
+            Drawable d = Music.getCachedArtwork(context, Integer.valueOf( name ), mDefaultAlbumIcon);
+            iv.setImageDrawable( d );
             
             int currentartistid = Music.getCurrentAlbumId();
             int aid = cursor.getInt(mAlbumIdIdx);
@@ -598,21 +602,6 @@ public class AlbumBrowser extends ListActivity
             }
         }
         
-        @Override
-        public Cursor runQueryOnBackgroundThread(CharSequence constraint) {
-//            String s = constraint.toString();
-//            if (mConstraintIsValid && (
-//                    (s == null && mConstraint == null) ||
-//                    (s != null && s.equals(mConstraint)))) {
-//                return getCursor();
-//            }
-//            Cursor c = mActivity.getArtistCursor(null, s);
-//            mConstraint = s;
-//            mConstraintIsValid = true;
-//            return c;
-            return null;
-        }
-        
         public Object[] getSections() {
             return mIndexer.getSections();
         }
@@ -624,6 +613,28 @@ public class AlbumBrowser extends ListActivity
         public int getSectionForPosition(int position) {
             return 0;
         }
+
+        public void imageDownloadProgress( int imageDownloaded, int imageCount )
+        {
+            System.out.println("fetched " + imageDownloaded + " / " + imageCount );
+            notifyDataSetChanged();
+        }
+
+        public void asynOperationEnded()
+        {
+            notifyDataSetChanged();
+        }
+
+        public void asynOperationStarted()
+        {
+            System.out.println("image fetch started");
+        }
+        
+        public void setImageCache( ImageCache imageCache ) {
+            mImageDownloader = new ImageDownloader(imageCache);
+            mImageDownloader.setListener(this);
+            mImageCache = imageCache;
+    }
     }
 
     /**
@@ -663,10 +674,69 @@ public class AlbumBrowser extends ListActivity
         public void onPostExecute( Boolean result )
         {
             Music.setSpinnerState(AlbumBrowser.this, false);
+            mArtFetcher = new FetchArtTask().execute();
             if( cursor != null)
                 AlbumBrowser.this.init(cursor);
             else
                 System.out.println("CURSOR NULL");
+            mArtFetcher = new FetchArtTask().execute();
+        }
+    }
+    
+    private class FetchArtTask extends AsyncTask<Void, Integer, Boolean>
+    {
+        Cursor cursor;
+        int[] list;
+        @Override
+        public void onPreExecute()
+        {
+            mAdapter.asynOperationStarted();
+            System.out.println("fetch art");
+            Music.setSpinnerState(AlbumBrowser.this, true);
+            if( mAlbumCursor != null )
+            {
+                list = new int[mAlbumCursor.getCount()];
+                mAlbumCursor.moveToFirst();
+                for( int i=0; i < list.length; i++ ) {
+                    list[i] = mAlbumCursor.getInt( Music.ALBUM_MAPPING.ID );
+                    mAlbumCursor.moveToNext();
+                }
+                mAlbumCursor.moveToFirst();
+                System.out.println("gonna fetch " + list.length);
+            }else
+                System.out.println("album cursor == null");
+                
+        }
+
+        @Override
+        public Boolean doInBackground( Void... params )
+        {
+            try
+            {
+                int lim = list.length;
+                for(int i = 0; i < lim; i++) {
+                    Music.sDb.fetchArt( list[i] );
+                    publishProgress( i, lim );
+                }
+            }
+            catch ( Exception e )
+            {
+                return false;
+            }
+            return true;
+        }
+        
+        @Override
+        protected void onProgressUpdate( Integer... values )
+        {
+            mAdapter.imageDownloadProgress( values[0], values[1] );
+        }
+
+        @Override
+        public void onPostExecute( Boolean result )
+        {
+            Music.setSpinnerState(AlbumBrowser.this, false);
+            mAdapter.asynOperationEnded();
         }
     }
     
@@ -722,4 +792,5 @@ public class AlbumBrowser extends ListActivity
                 System.out.println("CURSOR NULL");
         }
     }
+   
 }

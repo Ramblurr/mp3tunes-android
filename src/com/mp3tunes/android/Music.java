@@ -19,6 +19,7 @@
 ***************************************************************************/
 package com.mp3tunes.android;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -32,16 +33,22 @@ import android.content.Intent;
 import android.content.ServiceConnection;
 import android.content.res.Resources;
 import android.database.Cursor;
-import android.os.AsyncTask;
-import android.os.IBinder;
+import android.graphics.BitmapFactory;
+import android.graphics.Bitmap;
+import android.graphics.Canvas;
+import android.graphics.ColorFilter;
+import android.graphics.PixelFormat;
+import android.graphics.drawable.BitmapDrawable;
+import android.graphics.drawable.Drawable;
+import android.os.Environment;
 import android.os.RemoteException;
+import android.preference.PreferenceManager;
 import android.util.Log;
 import android.view.Window;
 import android.widget.Toast;
 
 import com.binaryelysium.mp3tunes.api.Locker;
 import com.mp3tunes.android.R;
-import com.mp3tunes.android.activity.ArtistBrowser;
 import com.mp3tunes.android.service.ITunesService;
 import com.mp3tunes.android.service.Mp3tunesService;
 
@@ -446,5 +453,135 @@ public class Music
             cursor.moveToNext();
         }
         return list;
+    }
+    
+    private static final HashMap<Integer, Drawable> sArtCache = new HashMap<Integer, Drawable>();
+    private static final BitmapFactory.Options sBitmapOptionsCache = new BitmapFactory.Options();
+    private static final BitmapFactory.Options sBitmapOptions = new BitmapFactory.Options();
+    
+    static
+    {
+        // for the cache, 
+        // 565 is faster to decode and display
+        // and we don't want to dither here because the image will be scaled down later
+        sBitmapOptionsCache.inPreferredConfig = Bitmap.Config.RGB_565;
+        sBitmapOptionsCache.inDither = false;
+
+        sBitmapOptions.inPreferredConfig = Bitmap.Config.RGB_565;
+        sBitmapOptions.inDither = false;
+    }
+    
+    public static void initAlbumArtCache() 
+    {
+        clearAlbumArtCache();
+    }
+
+    public static void clearAlbumArtCache() 
+    {
+        synchronized( sArtCache ) {
+            sArtCache.clear();
+        }
+    }
+    
+    public static Drawable getCachedArtwork(Context context, int artIndex, BitmapDrawable defaultArtwork) 
+    {
+        Drawable d = null;
+        synchronized(sArtCache) 
+        {
+            d = sArtCache.get(artIndex);
+        }
+        if (d == null) {
+            d = defaultArtwork;
+            final Bitmap icon = defaultArtwork.getBitmap();
+            int w = icon.getWidth();
+            int h = icon.getHeight();
+            Bitmap b = Music.getArtworkQuick(context, artIndex, w, h);
+            if (b != null) {
+                d = new FastBitmapDrawable(b);
+                synchronized(sArtCache) {
+                    // the cache may have changed since we checked
+                    Drawable value = sArtCache.get(artIndex);
+                    if (value == null) {
+                        sArtCache.put(artIndex, d);
+                    } else {
+                        d = value;
+                    }
+                }
+            }     
+            
+        } 
+        return d;
+    }
+    
+    private static Bitmap getArtworkQuick(Context context, int album_id, int w, int h)
+    {
+        // NOTE: There is in fact a 1 pixel border on the right side in the ImageView
+        // used to display this drawable. Take it into account now, so we don't have to
+        // scale later.
+        w -= 1;
+        boolean cacheEnabled = PreferenceManager.getDefaultSharedPreferences(context).getBoolean( "cacheart", false );
+        Bitmap ret = null;
+        try {
+            String cacheDir = Environment.getExternalStorageDirectory() + "/mp3tunes/art/";
+            String ext = ".jpg";
+            if( cacheEnabled )
+            {
+                File f = new File( cacheDir + album_id + ext);
+                
+                if( f.exists() && f.canRead() )
+                {
+                    int sampleSize = 1;
+                    // Compute the closest power-of-two scale factor 
+                    // and pass that to sBitmapOptionsCache.inSampleSize, which will
+                    // result in faster decoding and better quality
+                    sBitmapOptionsCache.inJustDecodeBounds = true;
+                    BitmapFactory.decodeFile( f.getAbsolutePath(), sBitmapOptionsCache );
+                    int nextWidth = sBitmapOptionsCache.outWidth >> 1;
+                    int nextHeight = sBitmapOptionsCache.outHeight >> 1;
+                    while (nextWidth>w && nextHeight>h) {
+                        sampleSize <<= 1;
+                        nextWidth >>= 1;
+                        nextHeight >>= 1;
+                    }
+                    sBitmapOptionsCache.inSampleSize = sampleSize;
+                    sBitmapOptionsCache.inJustDecodeBounds = false;
+                    ret = BitmapFactory.decodeFile( f.getAbsolutePath(), sBitmapOptionsCache );
+                }
+            }
+            if (ret != null) {
+                // finally rescale to exactly the size we need
+                if (sBitmapOptionsCache.outWidth != w || sBitmapOptionsCache.outHeight != h) {
+                    Bitmap tmp = Bitmap.createScaledBitmap(ret, w, h, true);
+                    // Bitmap.createScaledBitmap() can return the same bitmap
+                    if (tmp != ret) ret.recycle();
+                    ret = tmp;
+                }
+                
+            }
+        } catch(Exception e) {}
+        return ret;
+    }
+    
+ // A really simple BitmapDrawable-like class, that doesn't do
+    // scaling, dithering or filtering.
+    private static class FastBitmapDrawable extends Drawable {
+        private Bitmap mBitmap;
+        public FastBitmapDrawable(Bitmap b) {
+            mBitmap = b;
+        }
+        @Override
+        public void draw(Canvas canvas) {
+            canvas.drawBitmap(mBitmap, 0, 0, null);
+        }
+        @Override
+        public int getOpacity() {
+            return PixelFormat.OPAQUE;
+        }
+        @Override
+        public void setAlpha(int alpha) {
+        }
+        @Override
+        public void setColorFilter(ColorFilter cf) {
+        }
     }
 }

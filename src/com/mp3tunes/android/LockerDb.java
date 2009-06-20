@@ -20,7 +20,13 @@
 
 package com.mp3tunes.android;
 
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
+import java.net.URL;
 
 import android.content.ContentValues;
 import android.content.Context;
@@ -30,6 +36,10 @@ import android.database.sqlite.SQLiteDiskIOException;
 import android.database.sqlite.SQLiteException;
 import android.database.sqlite.SQLiteOpenHelper;
 import android.database.sqlite.SQLiteDatabase.CursorFactory;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.os.Environment;
+import android.preference.PreferenceManager;
 import android.util.Log;
 
 import com.binaryelysium.mp3tunes.api.Album;
@@ -398,6 +408,69 @@ public class LockerDb
         c.close();
         return t;
     }
+    
+    public boolean artCached( String album_id )
+    {
+        boolean cacheEnabled = PreferenceManager.getDefaultSharedPreferences(mContext).getBoolean( "cacheart", false );
+        String cacheDir = Environment.getExternalStorageDirectory() + "/mp3tunes/art/";
+        String ext = ".jpg";
+        if( cacheEnabled )
+        {
+            File f = new File( cacheDir + album_id + ext);
+            if( f.exists() && f.canRead() )
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public void fetchArt( int album_id )
+    {
+        boolean cacheEnabled = PreferenceManager.getDefaultSharedPreferences(mContext).getBoolean( "cacheart", false );
+        Bitmap ret = null;
+        try {
+        String cacheDir = Environment.getExternalStorageDirectory() + "/mp3tunes/art/";
+        String ext = ".jpg";
+        if( cacheEnabled )
+        {
+            File f = new File( cacheDir + album_id + ext);
+            if( !f.exists() && !f.canRead() )
+            {
+                Track[] tracks = null;
+                synchronized(mLocker)
+                {
+                    tracks = mLocker.getTracksForAlbum( Integer.valueOf(  album_id ) ).getData();
+                }
+                String artUrl = null;
+                for( Track t : tracks)
+                {
+                    artUrl = t.getAlbumArt();
+                    if( artUrl != null )
+                        break;
+                }
+                ret  = getArtwork( artUrl );
+                if( ret != null && cacheEnabled ) 
+                {
+                    f = new File( cacheDir);
+                    f.mkdirs();
+                    f = new File( cacheDir + album_id + ext);
+                    f.createNewFile();
+                    
+                    if( f.canWrite() )
+                    {
+                        FileOutputStream out = new FileOutputStream(f);
+                        ret.compress( Bitmap.CompressFormat.JPEG, 70, out );
+                        out.close();
+                    }
+                }
+            }
+        }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+    
     
     public DbSearchResult search( DbSearchQuery query )
     {
@@ -852,6 +925,7 @@ public class LockerDb
         }
         System.out.println( "insertion complete" );
         mCache.setUpdate( System.currentTimeMillis(), LockerCache.TRACK );
+        mCache.saveCache( mContext );
     }
     
     private void refreshPlaylists()  throws SQLiteException, IOException
@@ -864,6 +938,7 @@ public class LockerDb
         }
         System.out.println( "insertion complete" );
         mCache.setUpdate( System.currentTimeMillis(), LockerCache.PLAYLIST );
+        mCache.saveCache( mContext );
     }
     
     private void refreshArtists()  throws SQLiteException, IOException
@@ -876,6 +951,7 @@ public class LockerDb
         }
         System.out.println( "insertion complete" );
         mCache.setUpdate( System.currentTimeMillis(), LockerCache.ARTIST );
+        mCache.saveCache( mContext );
     }
     
     private void refreshAlbums()  throws SQLiteException, IOException
@@ -888,6 +964,7 @@ public class LockerDb
         }
         System.out.println( "insertion complete" );
         mCache.setUpdate( System.currentTimeMillis(), LockerCache.ALBUM );
+        mCache.saveCache( mContext );
     }
     
     private void refreshAlbumsForArtist(int artist_id)  throws SQLiteException, IOException
@@ -1005,6 +1082,7 @@ public class LockerDb
         }
         System.out.println( "insertion complete" );
         mCache.setUpdate( System.currentTimeMillis(), cachetype );
+        mCache.saveCache( mContext );
     }
     
     private Cursor queryTokens( String type )
@@ -1094,7 +1172,35 @@ public class LockerDb
             }
             return mDb.query( table, columns, selection, null, null, null, null, null);
         }
+    
+    private Bitmap getArtwork( String urlstr )
+    {
 
+        try
+        {
+            URL url;
+
+            url = new URL( urlstr );
+
+            HttpURLConnection c = ( HttpURLConnection ) url.openConnection();
+            c.setDoInput( true );
+            c.connect();
+            InputStream is = c.getInputStream();
+            Bitmap img;
+            img = BitmapFactory.decodeStream( is );
+            return img;
+        }
+        catch ( MalformedURLException e )
+        {
+            Log.d( "LockerArtCache", "LockerArtCache passed invalid URL: " + urlstr );
+        }
+        catch ( IOException e )
+        {
+            Log.d( "LockerArtCache", "LockerArtCache IO exception: " + e );
+        }
+        return null;
+    }
+    
     public static String[] tokensToString( Token[] tokens )
     {
         String[] list  = new String[tokens.length];
