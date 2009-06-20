@@ -35,7 +35,7 @@ import com.mp3tunes.android.util.UserTask;
 import com.mp3tunes.android.util.Worker;
 
 
-public class Player extends Activity implements ServiceConnection
+public class Player extends Activity
 {
     protected static final int REFRESH = 0;
 
@@ -96,7 +96,7 @@ public class Player extends Activity implements ServiceConnection
         mAlbumArtWorker = new Worker("album art worker");
         mAlbumArtHandler = new RemoteImageHandler(mAlbumArtWorker.getLooper(),
                 mHandler);
-
+        Music.bindToService(this);
         mIntentFilter = new IntentFilter();
         mIntentFilter.addAction(Mp3tunesService.META_CHANGED);
         mIntentFilter.addAction(Mp3tunesService.PLAYBACK_FINISHED);
@@ -104,7 +104,6 @@ public class Player extends Activity implements ServiceConnection
         mIntentFilter.addAction(Mp3tunesService.PLAYBACK_ERROR);
         mIntentFilter.addAction(Mp3tunesService.DATABASE_ERROR);
         updateTrackInfo();
-        Music.bindToService(this, this);
     }
     
     @Override
@@ -133,6 +132,7 @@ public class Player extends Activity implements ServiceConnection
 
     @Override
     protected void onPause() {
+//        Music.unbindFromService( this );
         unregisterReceiver(mStatusListener);
         super.onPause();
     }
@@ -140,7 +140,7 @@ public class Player extends Activity implements ServiceConnection
     @Override
     public void onResume() {
         registerReceiver(mStatusListener, mIntentFilter);
-        Music.bindToService(this, this);
+//        Music.bindToService(this);
         updateTrackInfo();
         setPauseButtonImage();
 
@@ -152,14 +152,6 @@ public class Player extends Activity implements ServiceConnection
         Music.unbindFromService( this );
         mAlbumArtWorker.quit();
         super.onDestroy();
-    }
-    
-    public void onServiceConnected(ComponentName name, IBinder service)
-    {
-    }
-    
-    public void onServiceDisconnected(ComponentName name) {
-        finish();
     }
     
     private View.OnClickListener mPrevListener = new View.OnClickListener() {
