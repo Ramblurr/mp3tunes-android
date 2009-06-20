@@ -23,6 +23,7 @@
             android:summary="Click to choose your streaming rate"
             android:entries="@array/rate"
             android:entryValues="@array/rate_values"
-            android:dialogTitle="Choose a Streaming Rate" />
+            android:dialogTitle="Choose a Streaming Rate" 
+            android:defaultValue="-1"/>
     </PreferenceCategory>
 </PreferenceScreen>

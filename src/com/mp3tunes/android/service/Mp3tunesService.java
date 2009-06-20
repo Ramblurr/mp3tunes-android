@@ -436,7 +436,7 @@ public class Mp3tunesService extends Service
     
     private int chooseBitrate()
     {
-        int bitrate = PreferenceManager.getDefaultSharedPreferences(this).getInt( "bitrate", -1 );
+        int bitrate = Integer.valueOf( PreferenceManager.getDefaultSharedPreferences(this).getString( "bitrate", "-1" ) );
         
         if( bitrate == -1 )
         {
