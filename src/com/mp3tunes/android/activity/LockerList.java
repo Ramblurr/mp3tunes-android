@@ -246,6 +246,14 @@ public class LockerList extends ListActivity implements ServiceConnection
 
         return true;
     }
+    
+    
+    @Override
+    public boolean onPrepareOptionsMenu( Menu menu )
+    {
+        menu.findItem(R.id.menu_opt_player).setVisible( Music.isMusicPlaying() );
+        return super.onPrepareOptionsMenu( menu );
+    }
 
     /** Handles menu clicks */
     public boolean onOptionsItemSelected( MenuItem item )
@@ -382,7 +390,7 @@ public class LockerList extends ListActivity implements ServiceConnection
         {
         case DIALOG_REFRESH: {
             ProgressDialog dialog = new ProgressDialog( this );
-            dialog.setMessage( getString( R.string.loading_msg ) );
+            dialog.setMessage( getString( R.string.loading_albums ) );
             dialog.setIndeterminate( true );
             dialog.setCancelable( false );
             return dialog;

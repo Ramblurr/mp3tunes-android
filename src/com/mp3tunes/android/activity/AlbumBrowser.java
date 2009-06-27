@@ -15,6 +15,8 @@
  */
 package com.mp3tunes.android.activity;
 
+import android.app.AlertDialog;
+import android.app.Dialog;
 import android.app.ListActivity;
 import android.app.SearchManager;
 import android.content.AsyncQueryHandler;
@@ -35,9 +37,10 @@ import android.os.AsyncTask;
 import android.os.Bundle;
 import android.provider.MediaStore;
 import android.view.ContextMenu;
+import android.view.LayoutInflater;
 import android.view.Menu;
+import android.view.MenuInflater;
 import android.view.MenuItem;
-import android.view.SubMenu;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.Window;
@@ -74,6 +77,9 @@ public class AlbumBrowser extends ListActivity
     private AsyncTask mArtFetcher;
     private boolean mAdapterSent;
     private final static int SEARCH = CHILD_MENU_BASE;
+    private final static int PROGRESS = CHILD_MENU_BASE + 1;
+    
+    private AlertDialog mProgDialog;
 
     /** Called when the activity is first created. */
     @Override
@@ -92,6 +98,17 @@ public class AlbumBrowser extends ListActivity
         if(! Music.connectToDb( this ) )
             finish(); //TODO show error
 
+        AlertDialog.Builder builder;
+        LayoutInflater inflater = (LayoutInflater) getSystemService(LAYOUT_INFLATER_SERVICE);
+        View layout = inflater.inflate(R.layout.progress_dialog,
+                                       (ViewGroup) findViewById(R.id.layout_root));
+
+        TextView text = (TextView) layout.findViewById(R.id.progress_text);
+        text.setText(R.string.loading_albums);
+
+        builder = new AlertDialog.Builder(this);
+        builder.setView(layout);
+        mProgDialog = builder.create();
 
         setContentView(R.layout.media_picker_activity);
         ListView lv = getListView();
@@ -185,6 +202,18 @@ public class AlbumBrowser extends ListActivity
     public void onPause() {
         unregisterReceiver(mTrackListListener);
         super.onPause();
+    }
+    
+    @Override
+    protected Dialog onCreateDialog( int id )
+    {
+        switch ( id )
+        {
+        case PROGRESS:
+            return mProgDialog;
+        default:
+            return null;
+        }
     }
 
     public void init(Cursor c) {
@@ -344,15 +373,14 @@ public class AlbumBrowser extends ListActivity
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         super.onCreateOptionsMenu(menu);
-        menu.add(0, GOTO_START, 0, R.string.menu_home).setIcon(R.drawable.ic_mp_song_playback);
-        menu.add(0, GOTO_PLAYBACK, 0, R.string.menu_player).setIcon(R.drawable.ic_mp_song_playback);
-        menu.add(0, SHUFFLE_ALL, 0, R.string.menu_shuffle_all).setIcon(R.drawable.ic_mp_song_playback);
+        MenuInflater inflater = getMenuInflater();
+        inflater.inflate(R.menu.artists, menu);
         return true;
     }
 
     @Override
     public boolean onPrepareOptionsMenu(Menu menu) {
-        menu.findItem(GOTO_PLAYBACK).setVisible(Music.isMusicPlaying());
+        menu.findItem(R.id.menu_opt_player).setVisible( Music.isMusicPlaying() );
         return super.onPrepareOptionsMenu(menu);
     }
 
@@ -361,14 +389,14 @@ public class AlbumBrowser extends ListActivity
         Intent intent;
         Cursor cursor;
         switch (item.getItemId()) {
-            case GOTO_START:
+            case R.id.menu_opt_home:
                 intent = new Intent();
                 intent.setClass(this, LockerList.class);
                 intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
                 startActivity(intent);
                 return true;
 
-            case GOTO_PLAYBACK:
+            case R.id.menu_opt_player:
                 intent = new Intent("com.mp3tunes.android.PLAYER");
                 startActivity(intent);
                 return true;
@@ -648,6 +676,7 @@ public class AlbumBrowser extends ListActivity
         @Override
         public void onPreExecute()
         {
+            AlbumBrowser.this.showDialog( PROGRESS );
             Music.setSpinnerState(AlbumBrowser.this, true);
         }
 
@@ -673,6 +702,7 @@ public class AlbumBrowser extends ListActivity
         @Override
         public void onPostExecute( Boolean result )
         {
+            dismissDialog( PROGRESS );
             Music.setSpinnerState(AlbumBrowser.this, false);
             mArtFetcher = new FetchArtTask().execute();
             if( cursor != null)

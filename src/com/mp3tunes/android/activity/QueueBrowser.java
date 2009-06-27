@@ -16,6 +16,8 @@
 
 package com.mp3tunes.android.activity;
 
+import android.app.AlertDialog;
+import android.app.Dialog;
 import android.app.ListActivity;
 import android.app.SearchManager;
 import android.content.AsyncQueryHandler;
@@ -44,6 +46,7 @@ import android.provider.MediaStore.Audio.Playlists;
 import android.util.Log;
 import android.view.ContextMenu;
 import android.view.KeyEvent;
+import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.SubMenu;
@@ -90,6 +93,7 @@ public class QueueBrowser extends ListActivity implements View.OnCreateContextMe
     private ListView mTrackList;
     private Cursor mTrackCursor;
     private TrackListAdapter mAdapter;
+    private AlertDialog mProgDialog;
     private boolean mAdapterSent = false;
     private String mAlbumId;
     private String mArtistId;
@@ -99,6 +103,8 @@ public class QueueBrowser extends ListActivity implements View.OnCreateContextMe
     private String mSortOrder;
     private int mSelectedPosition;
     private long mSelectedId;
+    
+    private final static int PROGRESS = CHILD_MENU_BASE;
 
 
     public QueueBrowser()
@@ -147,6 +153,19 @@ public class QueueBrowser extends ListActivity implements View.OnCreateContextMe
         {
             mTrackList.setTextFilterEnabled( true );
         }
+        
+        AlertDialog.Builder builder;
+        LayoutInflater inflater = (LayoutInflater) getSystemService(LAYOUT_INFLATER_SERVICE);
+        View layout = inflater.inflate(R.layout.progress_dialog,
+                                       (ViewGroup) findViewById(R.id.layout_root));
+
+        TextView text = (TextView) layout.findViewById(R.id.progress_text);
+        text.setText(R.string.loading_tracks);
+
+        builder = new AlertDialog.Builder(this);
+        builder.setView(layout);
+        mProgDialog = builder.create();
+        
         mAdapter = ( TrackListAdapter ) getLastNonConfigurationInstance();
 
         if ( mAdapter != null )
@@ -283,6 +302,18 @@ public class QueueBrowser extends ListActivity implements View.OnCreateContextMe
     public void onPause()
     {
         super.onPause();
+    }
+    
+    @Override
+    protected Dialog onCreateDialog( int id )
+    {
+        switch ( id )
+        {
+        case PROGRESS:
+            return mProgDialog;
+        default:
+            return null;
+        }
     }
 
     public void onSaveInstanceState( Bundle outcicle )
@@ -1191,6 +1222,7 @@ public class QueueBrowser extends ListActivity implements View.OnCreateContextMe
         @Override
         public void onPreExecute()
         {
+            showDialog( PROGRESS );
             Music.setSpinnerState(QueueBrowser.this, true);
         }
 
@@ -1220,6 +1252,7 @@ public class QueueBrowser extends ListActivity implements View.OnCreateContextMe
         @Override
         public void onPostExecute( Boolean result )
         {
+            dismissDialog( PROGRESS );
             Music.setSpinnerState(QueueBrowser.this, false);
             if( cursor != null)
                 QueueBrowser.this.init(cursor);

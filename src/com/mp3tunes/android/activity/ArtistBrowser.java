@@ -15,11 +15,11 @@
  */
 package com.mp3tunes.android.activity;
 
+import android.app.AlertDialog;
+import android.app.Dialog;
 import android.app.ListActivity;
 import android.app.SearchManager;
-import android.content.AsyncQueryHandler;
 import android.content.BroadcastReceiver;
-import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
@@ -33,38 +33,29 @@ import android.media.AudioManager;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
-import android.os.Handler;
-import android.os.Message;
 import android.provider.MediaStore;
 import android.view.ContextMenu;
+import android.view.LayoutInflater;
 import android.view.Menu;
+import android.view.MenuInflater;
 import android.view.MenuItem;
-import android.view.SubMenu;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.Window;
 import android.view.ContextMenu.ContextMenuInfo;
-import android.widget.Adapter;
 import android.widget.AlphabetIndexer;
-import android.widget.CursorAdapter;
 import android.widget.ImageView;
-import android.widget.ListAdapter;
 import android.widget.ListView;
 import android.widget.SectionIndexer;
 import android.widget.SimpleCursorAdapter;
 import android.widget.TextView;
 import android.widget.AdapterView.AdapterContextMenuInfo;
 
-import com.binaryelysium.mp3tunes.api.Locker;
-import com.binaryelysium.mp3tunes.api.Token;
 import com.mp3tunes.android.LockerDb;
-import com.mp3tunes.android.MP3tunesApplication;
 import com.mp3tunes.android.Music;
 import com.mp3tunes.android.MusicAlphabetIndexer;
 import com.mp3tunes.android.R;
 import com.mp3tunes.android.service.Mp3tunesService;
-
-import java.text.Collator;
 
 public class ArtistBrowser extends ListActivity
     implements View.OnCreateContextMenuListener, Music.Defs
@@ -75,6 +66,8 @@ public class ArtistBrowser extends ListActivity
     private ArtistListAdapter mAdapter;
     private boolean mAdapterSent;
     private final static int SEARCH = CHILD_MENU_BASE;
+    private final static int PROGRESS = CHILD_MENU_BASE + 1;
+    private AlertDialog mProgDialog;
 
     
     /** Called when the activity is first created. */
@@ -93,7 +86,18 @@ public class ArtistBrowser extends ListActivity
         Music.bindToService(this);
         if(! Music.connectToDb( this ) )
             finish(); //TODO show error
+        
+        AlertDialog.Builder builder;
+        LayoutInflater inflater = (LayoutInflater) getSystemService(LAYOUT_INFLATER_SERVICE);
+        View layout = inflater.inflate(R.layout.progress_dialog,
+                                       (ViewGroup) findViewById(R.id.layout_root));
 
+        TextView text = (TextView) layout.findViewById(R.id.progress_text);
+        text.setText(R.string.loading_artists);
+
+        builder = new AlertDialog.Builder(this);
+        builder.setView(layout);
+        mProgDialog = builder.create();
 
         setContentView(R.layout.media_picker_activity);
         ListView lv = getListView();
@@ -101,29 +105,6 @@ public class ArtistBrowser extends ListActivity
         lv.setOnCreateContextMenuListener(this);
         lv.setTextFilterEnabled(true);
 
-        mAdapter = (ArtistListAdapter) getLastNonConfigurationInstance();
-        if (mAdapter == null) {
-            //Log.i("@@@", "starting query");
-            mAdapter = new ArtistListAdapter(
-                    getApplication(),
-                    this,
-                    R.layout.track_list_item,
-                    mArtistCursor,
-                    new String[] {},
-                    new int[] {});
-            setListAdapter(mAdapter);
-            setTitle(R.string.title_working_artists);
-            new FetchArtistsTask().execute();
-        } else {
-            mAdapter.setActivity(this);
-            setListAdapter(mAdapter);
-            mArtistCursor = mAdapter.getCursor();
-            if (mArtistCursor != null) {
-                init(mArtistCursor);
-            } else {
-                new FetchArtistsTask().execute();
-            }
-        }
     }
 
     @Override
@@ -153,6 +134,35 @@ public class ArtistBrowser extends ListActivity
             }
         }
         super.onDestroy();
+    }
+    
+    @Override
+    protected void onStart()
+    {
+        super.onStart();
+        mAdapter = (ArtistListAdapter) getLastNonConfigurationInstance();
+        if (mAdapter == null) {
+            //Log.i("@@@", "starting query");
+            mAdapter = new ArtistListAdapter(
+                    getApplication(),
+                    this,
+                    R.layout.track_list_item,
+                    mArtistCursor,
+                    new String[] {},
+                    new int[] {});
+            setListAdapter(mAdapter);
+            setTitle(R.string.title_working_artists);
+            new FetchArtistsTask().execute();
+        } else {
+            mAdapter.setActivity(this);
+            setListAdapter(mAdapter);
+            mArtistCursor = mAdapter.getCursor();
+            if (mArtistCursor != null) {
+                init(mArtistCursor);
+            } else {
+                new FetchArtistsTask().execute();
+            }
+        }
     }
     
     @Override
@@ -194,6 +204,18 @@ public class ArtistBrowser extends ListActivity
 
     private void setTitle() {
             setTitle(R.string.title_artists);
+    }
+    
+    @Override
+    protected Dialog onCreateDialog( int id )
+    {
+        switch ( id )
+        {
+        case PROGRESS:
+            return mProgDialog;
+        default:
+            return null;
+        }
     }
     
     @Override
@@ -321,15 +343,14 @@ public class ArtistBrowser extends ListActivity
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         super.onCreateOptionsMenu(menu);
-        menu.add(0, GOTO_START, 0, R.string.menu_home).setIcon(R.drawable.ic_mp_song_playback);
-        menu.add(0, GOTO_PLAYBACK, 0, R.string.menu_player).setIcon(R.drawable.ic_mp_song_playback);
-        menu.add(0, SHUFFLE_ALL, 0, R.string.menu_shuffle_all).setIcon(R.drawable.ic_mp_song_playback);
+        MenuInflater inflater = getMenuInflater();
+        inflater.inflate(R.menu.artists, menu);
         return true;
     }
 
     @Override
     public boolean onPrepareOptionsMenu(Menu menu) {
-        menu.findItem(GOTO_PLAYBACK).setVisible(Music.isMusicPlaying());
+        menu.findItem(R.id.menu_opt_player).setVisible( Music.isMusicPlaying() );
         return super.onPrepareOptionsMenu(menu);
     }
 
@@ -338,14 +359,14 @@ public class ArtistBrowser extends ListActivity
         Intent intent;
         Cursor cursor;
         switch (item.getItemId()) {
-            case GOTO_START:
+            case R.id.menu_opt_home:
                 intent = new Intent();
                 intent.setClass(this, LockerList.class);
                 intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
                 startActivity(intent);
                 return true;
 
-            case GOTO_PLAYBACK:
+            case R.id.menu_opt_player:
                 intent = new Intent("com.mp3tunes.android.PLAYER");
                 startActivity(intent);
                 return true;
@@ -535,6 +556,7 @@ public class ArtistBrowser extends ListActivity
         @Override
         public void onPreExecute()
         {
+            ArtistBrowser.this.showDialog( PROGRESS );
             Music.setSpinnerState(ArtistBrowser.this, true);
             System.out.println("Fetching artists tasks");
         }
@@ -563,6 +585,7 @@ public class ArtistBrowser extends ListActivity
         @Override
         public void onPostExecute( Boolean result )
         {
+            dismissDialog( PROGRESS );
             Music.setSpinnerState(ArtistBrowser.this, false);
             if( cursor != null)
                 ArtistBrowser.this.init(cursor);
