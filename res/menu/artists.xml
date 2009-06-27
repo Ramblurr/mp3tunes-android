@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:id="@+id/menu_opt_home"
+        android:title="@string/menu_home"
+        android:icon="@drawable/ic_menu_music_library"/>
+    <item
+        android:id="@+id/menu_opt_player"
+        android:icon="@drawable/ic_menu_playback"
+        android:title="@string/menu_player"/>
+</menu>

@@ -3,9 +3,13 @@
     <item
         android:id="@+id/menu_opt_logout"
         android:title="@string/menu_logout"
-        android:icon="@android:drawable/ic_menu_close_clear_cancel"></item>
+        android:icon="@android:drawable/ic_menu_close_clear_cancel"/>
     <item
         android:id="@+id/menu_opt_settings"
         android:icon="@android:drawable/ic_menu_preferences"
-        android:title="@string/menu_settings"></item>
+        android:title="@string/menu_settings"/>
+    <item
+        android:id="@+id/menu_opt_player"
+        android:icon="@drawable/ic_menu_playback"
+        android:title="@string/menu_player"/>
 </menu>
