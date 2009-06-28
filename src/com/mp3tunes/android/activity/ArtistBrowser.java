@@ -68,6 +68,8 @@ public class ArtistBrowser extends ListActivity
     private final static int SEARCH = CHILD_MENU_BASE;
     private final static int PROGRESS = CHILD_MENU_BASE + 1;
     private AlertDialog mProgDialog;
+    private AsyncTask mArtistTask;
+    private AsyncTask mTracksTask;
 
     
     /** Called when the activity is first created. */
@@ -124,7 +126,12 @@ public class ArtistBrowser extends ListActivity
     }
 
     @Override
-    public void onDestroy() {
+    public void onDestroy() 
+    {
+        if( mArtistTask != null && mArtistTask.getStatus() == AsyncTask.Status.RUNNING)
+            mArtistTask.cancel( true );
+        if( mTracksTask != null && mTracksTask.getStatus() == AsyncTask.Status.RUNNING)
+            mTracksTask.cancel( true );
         Music.unbindFromService(this);
         Music.unconnectFromDb( this );
         if (!mAdapterSent) {
@@ -152,7 +159,7 @@ public class ArtistBrowser extends ListActivity
                     new int[] {});
             setListAdapter(mAdapter);
             setTitle(R.string.title_working_artists);
-            new FetchArtistsTask().execute();
+            mArtistTask = new FetchArtistsTask().execute();
         } else {
             mAdapter.setActivity(this);
             setListAdapter(mAdapter);
@@ -160,7 +167,7 @@ public class ArtistBrowser extends ListActivity
             if (mArtistCursor != null) {
                 init(mArtistCursor);
             } else {
-                new FetchArtistsTask().execute();
+                mArtistTask = new FetchArtistsTask().execute();
             }
         }
     }
@@ -241,12 +248,12 @@ public class ArtistBrowser extends ListActivity
         switch (item.getItemId()) {
             case PLAY_SELECTION: {
                 // play the selected artist
-                new FetchTracksTask().execute( Integer.valueOf( mCurrentArtistId ), PLAY_SELECTION );
+                mTracksTask = new FetchTracksTask().execute( Integer.valueOf( mCurrentArtistId ), PLAY_SELECTION );
                 return true;
             }
 
             case QUEUE: {
-                new FetchTracksTask().execute( Integer.valueOf( mCurrentArtistId ), QUEUE );
+                mTracksTask = new FetchTracksTask().execute( Integer.valueOf( mCurrentArtistId ), QUEUE );
                 return true;
             }
 

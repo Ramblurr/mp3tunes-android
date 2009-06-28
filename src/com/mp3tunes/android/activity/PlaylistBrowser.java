@@ -82,6 +82,8 @@ public class PlaylistBrowser extends ListActivity
     private static final long RECENTLY_ADDED_PLAYLIST = -1;
     private static final long ALL_SONGS_PLAYLIST = -2;
     private static final long PODCASTS_PLAYLIST = -3;
+    private AsyncTask mPlaylistTask;
+    private AsyncTask mTracksTask;
 
     
     /** Called when the activity is first created. */
@@ -114,7 +116,7 @@ public class PlaylistBrowser extends ListActivity
                     new int[] {});
             setListAdapter(mAdapter);
             setTitle(R.string.title_working_playlists);
-            new FetchPlaylistsTask().execute();
+            mPlaylistTask = new FetchPlaylistsTask().execute();
         } else {
             mAdapter.setActivity(this);
             setListAdapter(mAdapter);
@@ -123,7 +125,7 @@ public class PlaylistBrowser extends ListActivity
                 init(mPlaylistCursor);
             } else {
                 setTitle(R.string.title_working_playlists);
-                new FetchPlaylistsTask().execute();
+                mPlaylistTask = new FetchPlaylistsTask().execute();
             }
         }
     }
@@ -146,6 +148,10 @@ public class PlaylistBrowser extends ListActivity
 
     @Override
     public void onDestroy() {
+        if( mTracksTask != null && mTracksTask.getStatus() == AsyncTask.Status.RUNNING)
+            mTracksTask.cancel( true );
+        if( mPlaylistTask != null && mPlaylistTask.getStatus() == AsyncTask.Status.RUNNING)
+            mPlaylistTask.cancel( true );
         Music.unbindFromService(this);
         Music.unconnectFromDb( this );
         if (!mAdapterSent) {
@@ -227,7 +233,7 @@ public class PlaylistBrowser extends ListActivity
         switch (item.getItemId()) {
             case PLAY_SELECTION: {
                 // play the selected playlist
-                new FetchTracksTask().execute( Integer.valueOf( mCurrentPlaylistId ), PLAY_SELECTION );
+                mTracksTask = new FetchTracksTask().execute( Integer.valueOf( mCurrentPlaylistId ), PLAY_SELECTION );
                 return true;
             }
 

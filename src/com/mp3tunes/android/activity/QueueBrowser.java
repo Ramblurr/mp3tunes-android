@@ -103,6 +103,7 @@ public class QueueBrowser extends ListActivity implements View.OnCreateContextMe
     private String mSortOrder;
     private int mSelectedPosition;
     private long mSelectedId;
+    private AsyncTask mTrackTask;
     
     private final static int PROGRESS = CHILD_MENU_BASE;
 
@@ -238,6 +239,8 @@ public class QueueBrowser extends ListActivity implements View.OnCreateContextMe
     @Override
     public void onDestroy()
     {
+        if( mTrackTask != null && mTrackTask.getStatus() == AsyncTask.Status.RUNNING)
+            mTrackTask.cancel( true );
         Music.unbindFromService( this );
         try
         {
@@ -966,7 +969,7 @@ public class QueueBrowser extends ListActivity implements View.OnCreateContextMe
                 // Nothing is playing.
             }
         } else {
-            new FetchTracksTask().execute();
+            mTrackTask = new FetchTracksTask().execute();
         }
         
         // This special case is for the "nowplaying" cursor, which cannot be

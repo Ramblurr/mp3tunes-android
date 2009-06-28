@@ -75,6 +75,8 @@ public class AlbumBrowser extends ListActivity
     private String mArtistId;
     private AlbumListAdapter mAdapter;
     private AsyncTask mArtFetcher;
+    private AsyncTask mAlbumFetcher;
+    private AsyncTask mTracksTask;
     private boolean mAdapterSent;
     private final static int SEARCH = CHILD_MENU_BASE;
     private final static int PROGRESS = CHILD_MENU_BASE + 1;
@@ -128,7 +130,7 @@ public class AlbumBrowser extends ListActivity
                     new int[] {});
             setListAdapter(mAdapter);
             setTitle(R.string.title_working_albums);
-            new FetchAlbumsTask().execute();
+            mAlbumFetcher = new FetchAlbumsTask().execute();
         } else {
             mAdapter.setActivity(this);
             setListAdapter(mAdapter);
@@ -136,7 +138,7 @@ public class AlbumBrowser extends ListActivity
             if (mAlbumCursor != null) {
                 init(mAlbumCursor);
             } else {
-                new FetchAlbumsTask().execute();
+                mAlbumFetcher = new FetchAlbumsTask().execute();
             }
         }
     }
@@ -165,6 +167,10 @@ public class AlbumBrowser extends ListActivity
 
     @Override
     public void onDestroy() {
+        if( mAlbumFetcher != null && mAlbumFetcher.getStatus() == AsyncTask.Status.RUNNING)
+            mAlbumFetcher.cancel(true);
+        if( mTracksTask != null && mTracksTask.getStatus() == AsyncTask.Status.RUNNING)
+            mTracksTask.cancel( true );
         if( mArtFetcher != null && mArtFetcher.getStatus() == AsyncTask.Status.RUNNING)
         {
             mArtFetcher.cancel(true);
@@ -269,12 +275,12 @@ public class AlbumBrowser extends ListActivity
         switch (item.getItemId()) {
             case PLAY_SELECTION: {
                 // play the selected album
-                new FetchTracksTask().execute( Integer.valueOf( mCurrentAlbumId ), PLAY_SELECTION );
+                mTracksTask = new FetchTracksTask().execute( Integer.valueOf( mCurrentAlbumId ), PLAY_SELECTION );
                 return true;
             }
 
             case QUEUE: {
-                new FetchTracksTask().execute( Integer.valueOf( mCurrentAlbumId ), QUEUE );
+                mTracksTask = new FetchTracksTask().execute( Integer.valueOf( mCurrentAlbumId ), QUEUE );
                 return true;
             }
 

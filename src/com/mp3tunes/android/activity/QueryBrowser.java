@@ -62,6 +62,7 @@ public class QueryBrowser extends ListActivity implements Music.Defs
     private ListView mTrackList;
     private SearchCursor mQueryCursor;
     private AlertDialog mProgDialog;
+    private AsyncTask mSearchTask;
 
     /** Called when the activity is first created. */
     @Override
@@ -111,7 +112,7 @@ public class QueryBrowser extends ListActivity implements Music.Defs
             if (!TextUtils.isEmpty(mFilterString)) {
                 
 //            } else {
-                new SearchTask().execute( mFilterString );
+                mSearchTask = new SearchTask().execute( mFilterString );
                 mTrackList.setFilterText(mFilterString);
                 mFilterString = null;
             }
@@ -123,7 +124,7 @@ public class QueryBrowser extends ListActivity implements Music.Defs
             if (mQueryCursor != null) {
                 init(mQueryCursor);
             } else {
-                new SearchTask().execute( mFilterString );
+                mSearchTask = new SearchTask().execute( mFilterString );
             }
         }
     }
@@ -141,6 +142,8 @@ public class QueryBrowser extends ListActivity implements Music.Defs
 
     @Override
     public void onDestroy() {
+        if( mSearchTask != null && mSearchTask.getStatus() == AsyncTask.Status.RUNNING)
+            mSearchTask.cancel( true );
         Music.unbindFromService(this);
         if (!mAdapterSent && mAdapter != null) {
             Cursor c = mAdapter.getCursor();
