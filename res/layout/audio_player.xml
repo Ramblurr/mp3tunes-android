@@ -19,7 +19,7 @@
     android:layout_width="fill_parent"
     android:layout_height="fill_parent"
     android:orientation="vertical"
-    android:background="@drawable/back_plain">
+    android:background="@color/mp3tunesblue">
 
 
     <!-- Playback view -->
@@ -132,8 +132,9 @@
             android:paddingBottom="5dip"
             android:gravity="center"
             android:layout_alignParentBottom="true"
-            android:background="@drawable/tab_bar_rest"
+            
             android:layout_below="@id/track_metadata">
+<!--            android:background="@drawable/tab_bar_rest"-->
 
             <ImageButton
                 android:id="@+id/rew"

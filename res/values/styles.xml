@@ -42,10 +42,5 @@
         <item name="android:layout_width">26dip</item>
         <item name="android:layout_height">25dip</item>
     </style>
-    <style name="TunesButton.Back">
-        <item name="android:src">@+drawable/back</item>
-        <item name="android:layout_width">49dip</item>
-        <item name="android:layout_height">36dip</item>
-    </style>
         
 </resources>
