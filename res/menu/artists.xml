@@ -8,4 +8,12 @@
         android:id="@+id/menu_opt_player"
         android:icon="@drawable/ic_menu_playback"
         android:title="@string/menu_player"/>
+    <item
+        android:id="@+id/menu_opt_playall"
+        android:icon="@drawable/ic_menu_play_clip"
+        android:title="@string/menu_play_selection"/>
+    <item
+        android:id="@+id/menu_opt_shuffleall"
+        android:icon="@drawable/ic_menu_shuffle"
+        android:title="@string/menu_shuffle_all"/>
 </menu>

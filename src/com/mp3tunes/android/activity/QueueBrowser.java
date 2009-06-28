@@ -850,17 +850,16 @@ public class QueueBrowser extends ListActivity implements View.OnCreateContextMe
                 intent = new Intent("com.mp3tunes.android.PLAYER");
                 startActivity(intent);
                 return true;
-
-            case SHUFFLE_ALL:
-                //TODO shuffle all
-//                cursor = Music.query(this, MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
-//                        new String [] { MediaStore.Audio.Media._ID},
-//                        MediaStore.Audio.Media.IS_MUSIC + "=1", null,
-//                        MediaStore.Audio.Media.DEFAULT_SORT_ORDER);
-//                if (cursor != null) {
-//                    Music.shuffleAll(this, cursor);
-//                    cursor.close();
-//                }
+            case R.id.menu_opt_playall:
+                if ( mTrackCursor.getCount() == 0 )
+                    break;
+                 Music.playAll(this, mTrackCursor, 0);
+                 return true;
+                
+            case R.id.menu_opt_shuffleall:
+                if ( mTrackCursor.getCount() == 0 )
+                    break;
+                Music.shuffleAll( this, mTrackCursor );
                 return true;
         }
         return super.onOptionsItemSelected(item);

@@ -213,6 +213,7 @@ public class LockerList extends ListActivity
         switch ( item.getItemId() )
         {
         case R.id.menu_opt_logout:
+            clearData();
             logout();
             return true;
         case R.id.menu_opt_settings:
@@ -309,7 +310,6 @@ public class LockerList extends ListActivity
      */
     private void logout()
     {
-        clearData();
         Intent intent = new Intent( LockerList.this, Login.class );
         startActivity( intent );
         finish();
@@ -323,7 +323,6 @@ public class LockerList extends ListActivity
         editor.remove( "mp3tunes_pass" );
         editor.commit();
         Music.sDb.clearDB();
-        Music.unconnectFromDb( this );
     }
 
     protected Dialog onCreateDialog( int id )

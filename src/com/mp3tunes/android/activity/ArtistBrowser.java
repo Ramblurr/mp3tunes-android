@@ -359,6 +359,7 @@ public class ArtistBrowser extends ListActivity
     @Override
     public boolean onPrepareOptionsMenu(Menu menu) {
         menu.findItem(R.id.menu_opt_player).setVisible( Music.isMusicPlaying() );
+        menu.findItem(R.id.menu_opt_playall).setVisible( false );
         return super.onPrepareOptionsMenu(menu);
     }
 

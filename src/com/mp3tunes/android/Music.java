@@ -388,6 +388,10 @@ public class Music
         return -1;
     }
     
+    public static void shuffleAll(Context context, Cursor cursor)
+    {
+        playAll(context, cursor, 0, true);
+    }
     public static void playAll(Context context, Cursor cursor, int position) {
         playAll(context, cursor, position, false);
     }

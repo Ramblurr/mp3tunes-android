@@ -392,13 +392,13 @@ public class AlbumBrowser extends ListActivity
     @Override
     public boolean onPrepareOptionsMenu(Menu menu) {
         menu.findItem(R.id.menu_opt_player).setVisible( Music.isMusicPlaying() );
+        menu.findItem(R.id.menu_opt_playall).setVisible( false );
         return super.onPrepareOptionsMenu(menu);
     }
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         Intent intent;
-        Cursor cursor;
         switch (item.getItemId()) {
             case R.id.menu_opt_home:
                 intent = new Intent();
