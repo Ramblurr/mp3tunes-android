@@ -321,8 +321,8 @@ public class Mp3tunesService extends Service
 
         public void onBufferingUpdate( MediaPlayer mp, int percent )
         {
-
-         mBufferPercent = percent;
+         if( mp == mMp )
+             mBufferPercent = percent;
          if(mNextMp == null && percent == 100) 
          {
              // Check if we're running low on tracks

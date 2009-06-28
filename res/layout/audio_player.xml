@@ -99,14 +99,13 @@
 
                     <ProgressBar
                         android:id="@android:id/progress"
-                        android:background="#000"
-                        android:layout_height="8px"
-                        android:paddingLeft="5px"
-                        android:paddingRight="5px"
-                        android:layout_marginLeft="5px"
-                        android:layout_marginRight="5px"
+                        android:layout_height="15dip"
+                        android:paddingLeft="5dip"
+                        android:paddingRight="5dip"
+                        android:layout_marginLeft="5dip"
+                        android:layout_marginRight="5dip"
                         android:indeterminateOnly="false"
-                        android:progressDrawable="@+drawable/progress_horizontal"
+                        android:progressDrawable="@+drawable/seekbar"
                         android:layout_width="200dip"
                         android:layout_gravity="center_vertical" />
 

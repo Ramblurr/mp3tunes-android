@@ -19,14 +19,14 @@
 	</style>
 	<style name="TunesButton">
 		<item name="android:background">#000000FF</item>
-        <item name="android:layout_width">62dip</item>
-        <item name="android:layout_height">40dip</item>
+        <item name="android:layout_width">65dip</item>
+        <item name="android:layout_height">43dip</item>
         <item name="android:paddingLeft">5dip</item>
 	</style>
 	<style name="TunesButton.PlayPause">
 		<item name="android:src">@+drawable/play_button</item>
-        <item name="android:layout_width">94dip</item>
-        <item name="android:layout_height">56dip</item>
+        <item name="android:layout_width">97dip</item>
+        <item name="android:layout_height">59dip</item>
 	</style>
 	<style name="TunesButton.Fwd">
 		<item name="android:src">@+drawable/ffw_button</item>

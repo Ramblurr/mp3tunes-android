@@ -374,11 +374,13 @@ public class Player extends Activity
         try {
             mDuration = Music.sService.getDuration();
             long pos = Music.sService.getPosition();
+            int buffpercent = Music.sService.getBufferPercent();
             long remaining = 1000 - (pos % 1000);
             if ((pos >= 0) && (mDuration > 0) && (pos <= mDuration)) {
                 mCurrentTime.setText(Music.makeTimeString(this, pos / 1000));
                 mTotalTime.setText(Music.makeTimeString(this, mDuration / 1000));
-                mProgress.setProgress((int) (1000 * pos / mDuration));
+                mProgress.setProgress( (int) ( 1000 * pos / mDuration ) );
+                mProgress.setSecondaryProgress( buffpercent * 10 );
                 if (mProgressDialog != null) {
                     mProgressDialog.dismiss();
                     mProgressDialog = null;
