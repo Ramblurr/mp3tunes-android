@@ -116,7 +116,12 @@ public class ArtistBrowser extends ListActivity
     }
     
     @Override
-    public void onSaveInstanceState(Bundle outcicle) {
+    public void onSaveInstanceState(Bundle outcicle) 
+    {
+        if( mArtistTask != null && mArtistTask.getStatus() == AsyncTask.Status.RUNNING)
+            mArtistTask.cancel( true );
+        if( mTracksTask != null && mTracksTask.getStatus() == AsyncTask.Status.RUNNING)
+            mTracksTask.cancel( true );
         // need to store the selected item so we don't lose it in case
         // of an orientation switch. Otherwise we could lose it while
         // in the middle of specifying a playlist to add the item to.

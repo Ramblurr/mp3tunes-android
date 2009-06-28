@@ -150,7 +150,12 @@ public class AlbumBrowser extends ListActivity
     }
     
     @Override
-    public void onSaveInstanceState(Bundle outcicle) {
+    public void onSaveInstanceState(Bundle outcicle) 
+    {
+        if( mAlbumFetcher != null && mAlbumFetcher.getStatus() == AsyncTask.Status.RUNNING)
+            mAlbumFetcher.cancel(true);
+        if( mTracksTask != null && mTracksTask.getStatus() == AsyncTask.Status.RUNNING)
+            mTracksTask.cancel( true );
         if( mArtFetcher != null && mArtFetcher.getStatus() == AsyncTask.Status.RUNNING)
         {
             mArtFetcher.cancel(true);

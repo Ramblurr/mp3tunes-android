@@ -137,7 +137,13 @@ public class PlaylistBrowser extends ListActivity
     }
     
     @Override
-    public void onSaveInstanceState(Bundle outcicle) {
+    public void onSaveInstanceState(Bundle outcicle) 
+    {
+        if( mTracksTask != null && mTracksTask.getStatus() == AsyncTask.Status.RUNNING)
+            mTracksTask.cancel( true );
+        if( mPlaylistTask != null && mPlaylistTask.getStatus() == AsyncTask.Status.RUNNING)
+            mPlaylistTask.cancel( true );
+        
         // need to store the selected item so we don't lose it in case
         // of an orientation switch. Otherwise we could lose it while
         // in the middle of specifying a playlist to add the item to.
@@ -147,7 +153,8 @@ public class PlaylistBrowser extends ListActivity
     }
 
     @Override
-    public void onDestroy() {
+    public void onDestroy() 
+    {
         if( mTracksTask != null && mTracksTask.getStatus() == AsyncTask.Status.RUNNING)
             mTracksTask.cancel( true );
         if( mPlaylistTask != null && mPlaylistTask.getStatus() == AsyncTask.Status.RUNNING)

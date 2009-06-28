@@ -136,6 +136,14 @@ public class QueryBrowser extends ListActivity implements Music.Defs
     }
     
     @Override
+    protected void onSaveInstanceState( Bundle outState )
+    {
+        if( mSearchTask != null && mSearchTask.getStatus() == AsyncTask.Status.RUNNING)
+            mSearchTask.cancel( true );
+        super.onSaveInstanceState( outState );
+    }
+    
+    @Override
     public void onPause() {
         super.onPause();
     }
