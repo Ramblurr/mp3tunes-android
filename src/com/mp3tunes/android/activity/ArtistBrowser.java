@@ -107,6 +107,30 @@ public class ArtistBrowser extends ListActivity
         lv.setOnCreateContextMenuListener(this);
         lv.setTextFilterEnabled(true);
 
+        mAdapter = (ArtistListAdapter) getLastNonConfigurationInstance();
+        if (mAdapter == null) {
+            //Log.i("@@@", "starting query");
+            mAdapter = new ArtistListAdapter(
+                    getApplication(),
+                    this,
+                    R.layout.track_list_item,
+                    mArtistCursor,
+                    new String[] {},
+                    new int[] {});
+            setListAdapter(mAdapter);
+            setTitle(R.string.title_working_artists);
+            mArtistTask = new FetchArtistsTask().execute();
+        } else {
+            mAdapter.setActivity(this);
+            setListAdapter(mAdapter);
+            mArtistCursor = mAdapter.getCursor();
+            if (mArtistCursor != null) {
+                init(mArtistCursor);
+            } else {
+                mArtistTask = new FetchArtistsTask().execute();
+            }
+        }
+
     }
 
     @Override
@@ -118,6 +142,7 @@ public class ArtistBrowser extends ListActivity
     @Override
     public void onSaveInstanceState(Bundle outcicle) 
     {
+        System.out.println("On save instance state");
         if( mArtistTask != null && mArtistTask.getStatus() == AsyncTask.Status.RUNNING)
             mArtistTask.cancel( true );
         if( mTracksTask != null && mTracksTask.getStatus() == AsyncTask.Status.RUNNING)
@@ -147,36 +172,7 @@ public class ArtistBrowser extends ListActivity
         }
         super.onDestroy();
     }
-    
-    @Override
-    protected void onStart()
-    {
-        super.onStart();
-        mAdapter = (ArtistListAdapter) getLastNonConfigurationInstance();
-        if (mAdapter == null) {
-            //Log.i("@@@", "starting query");
-            mAdapter = new ArtistListAdapter(
-                    getApplication(),
-                    this,
-                    R.layout.track_list_item,
-                    mArtistCursor,
-                    new String[] {},
-                    new int[] {});
-            setListAdapter(mAdapter);
-            setTitle(R.string.title_working_artists);
-            mArtistTask = new FetchArtistsTask().execute();
-        } else {
-            mAdapter.setActivity(this);
-            setListAdapter(mAdapter);
-            mArtistCursor = mAdapter.getCursor();
-            if (mArtistCursor != null) {
-                init(mArtistCursor);
-            } else {
-                mArtistTask = new FetchArtistsTask().execute();
-            }
-        }
-    }
-    
+
     @Override
     public void onResume() {
         super.onResume();
