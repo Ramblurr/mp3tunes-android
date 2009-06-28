@@ -90,7 +90,7 @@ public class QueryBrowser extends ListActivity implements Music.Defs
                                        (ViewGroup) findViewById(R.id.layout_root));
 
         TextView text = (TextView) layout.findViewById(R.id.progress_text);
-        text.setText(R.string.loading_albums);
+        text.setText(R.string.loading_search);
 
         builder = new AlertDialog.Builder(this);
         builder.setView(layout);

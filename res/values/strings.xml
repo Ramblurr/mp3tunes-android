@@ -51,6 +51,7 @@
     <string name="loading_albums">Loading Albums..</string>
     <string name="loading_tracks">Loading Tracks..</string>
     <string name="loading_playlists">Loading Playlists..</string>
+    <string name="loading_search">Searching..</string>
     
     <string name="search_hint">Type an Artist or Track Name</string>
     
