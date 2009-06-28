@@ -57,7 +57,7 @@ import android.widget.ListView;
  * @author ramblurr
  * 
  */
-public class LockerList extends ListActivity implements ServiceConnection
+public class LockerList extends ListActivity
 {
     // the database cursor
     private Cursor mCursor = null;
@@ -130,7 +130,7 @@ public class LockerList extends ListActivity implements ServiceConnection
         mIntentFilter.addAction( Mp3tunesService.META_CHANGED );
 
         
-        Music.bindToService(this, this);
+        Music.bindToService( this );
         displayMainMenu( TRANSLATION_LEFT );
     }
     
@@ -152,7 +152,7 @@ public class LockerList extends ListActivity implements ServiceConnection
         if ( mCursor != null )
             mCursor.close();
         Music.unconnectFromDb( this );
-
+        Music.unbindFromService( this );
         super.onDestroy();
     }
     
@@ -165,21 +165,8 @@ public class LockerList extends ListActivity implements ServiceConnection
     @Override
     public void onResume() {
         registerReceiver( mStatusListener, mIntentFilter );
-        //We need to bind the player so we can see whether it's playing or not
-        //in order to properly display the Now Playing indicator if we've been
-        //relaunched after being killed.
-    
-        Music.bindToService(this, this);
         
         super.onResume();
-    }
-    
-    public void onServiceConnected(ComponentName name, IBinder service)
-    {
-    }
-    
-    public void onServiceDisconnected(ComponentName name) {
-//        finish();
     }
     
     private BroadcastReceiver mStatusListener = new BroadcastReceiver()
