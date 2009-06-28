@@ -522,7 +522,7 @@ public class Music
         return d;
     }
     
-    private static Bitmap getArtworkQuick(Context context, int album_id, int w, int h)
+    public static Bitmap getArtworkQuick(Context context, int album_id, int w, int h)
     {
         // NOTE: There is in fact a 1 pixel border on the right side in the ImageView
         // used to display this drawable. Take it into account now, so we don't have to

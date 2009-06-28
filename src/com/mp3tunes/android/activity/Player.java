@@ -168,7 +168,6 @@ public class Player extends Activity
 
     @Override
     public boolean onPrepareOptionsMenu(Menu menu) {
-        menu.findItem(R.id.menu_opt_player).setVisible( Music.isMusicPlaying() );
         return super.onPrepareOptionsMenu(menu);
     }
 
@@ -332,6 +331,7 @@ public class Player extends Activity
             String[] metadata = Music.sService.getMetadata();
             String artistName = metadata[2];
             String trackName = metadata[0];
+            int album_id = Integer.valueOf( metadata[5] );
             
             if(artistName.equals(Mp3tunesService.UNKNOWN)) {
                 mArtistName.setText("");
@@ -344,10 +344,10 @@ public class Player extends Activity
                 mTrackName.setText(trackName);
             }
 
-            Bitmap art = Music.sService.getAlbumArt();
-            mAlbum.setArtwork( art );
+            Bitmap bit = Music.getArtworkQuick( Player.this, album_id, mAlbum.getWidth(), mAlbum.getHeight() );
+            mAlbum.setArtwork( bit );
             mAlbum.invalidate();
-            if (art == null)
+            if (bit == null)
                  new LoadAlbumArtTask().execute((Void) null);
             setPauseButtonImage();
         } catch (java.util.concurrent.RejectedExecutionException e) {
