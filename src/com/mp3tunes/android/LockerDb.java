@@ -24,9 +24,11 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.reflect.Array;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.Arrays;
 
 import android.content.ContentValues;
 import android.content.Context;
@@ -35,6 +37,7 @@ import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteDiskIOException;
 import android.database.sqlite.SQLiteException;
 import android.database.sqlite.SQLiteOpenHelper;
+import android.database.sqlite.SQLiteQueryBuilder;
 import android.database.sqlite.SQLiteDatabase.CursorFactory;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -50,6 +53,7 @@ import com.binaryelysium.mp3tunes.api.Token;
 import com.binaryelysium.mp3tunes.api.Track;
 import com.binaryelysium.mp3tunes.api.results.DataResult;
 import com.binaryelysium.mp3tunes.api.results.SearchResult;
+import com.binaryelysium.util.StringUtilities;
 import com.mp3tunes.android.LockerCache;
 
 /**
@@ -120,8 +124,10 @@ public class LockerDb
                     refreshAlbums();
                 return queryAlbums();
             case ARTIST:
-                if ( !mCache.isCacheValid( LockerCache.ARTIST ) )
+                if ( !mCache.isCacheValid( LockerCache.ARTIST ) ) {
+                    System.out.println("artist cache not valid refreshing");
                     refreshArtists();
+                }
                 return queryArtists();
             case PLAYLIST:
                 if ( !mCache.isCacheValid( LockerCache.PLAYLIST ) )
@@ -491,7 +497,7 @@ public class LockerDb
             
             // Perform the single http search call
             refreshSearch( query.mQuery, artist, album, track );
-            
+//            return querySearch( query.mQuery );
             DbSearchResult res = new DbSearchResult();
             if( query.mTracks )
                 res.mTracks = querySearch( query.mQuery, Music.Meta.TRACK );

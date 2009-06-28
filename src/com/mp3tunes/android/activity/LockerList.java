@@ -278,7 +278,7 @@ public class LockerList extends ListActivity implements ServiceConnection
         public void onClick( View arg0 )
         {
 //            mHeaderText.setVisibility( View.INVISIBLE );
-            new SearchTask().execute( mSearchField.getText().toString() );
+//            new SearchTask().execute( mSearchField.getText().toString() );
             
         }
     };
@@ -346,6 +346,7 @@ public class LockerList extends ListActivity implements ServiceConnection
             return;
 
         case R.string.search:
+            onSearchRequested();
 //            mPositionMenu = STATE.SEARCH;
 //            (( ListAdapter ) getListAdapter() ).disableLoadBar();
 //            toggleHeader();
@@ -399,55 +400,6 @@ public class LockerList extends ListActivity implements ServiceConnection
         }
         return null;
 
-    }
-    
-    private class SearchTask extends UserTask<String, Void, Boolean>
-    {
-        int sense = -1;
-        String[] tokens= null;
-        LockerDb.DbSearchResult res;
-        @Override
-        public void onPreExecute()
-        {
-            
-        }
-
-        @Override
-        public Boolean doInBackground( String... params )
-        {
-            try
-            {
-                res = Music.sDb.search( Music.sDb.new DbSearchQuery( params[0], true, false, true ) );
-                
-            }
-            catch ( Exception e )
-            {
-                return false;
-            }
-            return true;
-        }
-
-        @Override
-        public void onPostExecute( Boolean result )
-        {
-            if(res == null)
-            {
-                System.out.println("No results");
-                return;
-            }
-            ArrayList<ListEntry> entries = new ArrayList<ListEntry>();
-            if( res.mArtists != null ) 
-                entries.addAll( entriesFromCursor( 0, R.drawable.artist_icon, 1, R.drawable.arrow, res.mArtists, Music.Meta.ARTIST ) );
-            if( res.mTracks != null )
-                entries.addAll( entriesFromCursor( 0, R.drawable.song_icon, 1, R.drawable.right_play, res.mTracks, Music.Meta.TRACK ) );
-            System.out.println("total entries: "  + entries.size());
-            ListAdapter adapter = new ListAdapter( LockerList.this );
-            adapter.setSourceIconified( entries );
-            setListAdapter( adapter );
-            getListView().setVisibility( View.VISIBLE );
-            res.mArtists.close();
-            res.mTracks.close();
-        }
     }
     
   private ArrayList<ListEntry> entriesFromCursor( int id_field, int icon_id, int text_id, int disclosure_id, Cursor cursor, Music.Meta type )

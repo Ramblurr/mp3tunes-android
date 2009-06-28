@@ -399,6 +399,11 @@ public class Music
         playAll(context, list, position, force_shuffle);
     }
     
+    public static void playAll(Context context, int [] list, int position )
+    {
+        playAll(context, list, position, false);   
+    }
+    
     private static void playAll(Context context, int [] list, int position, boolean force_shuffle) {
         if (list.length == 0 || sService == null || sDb == null) {
             Log.d("MusicUtils", "attempt to play empty song list");
