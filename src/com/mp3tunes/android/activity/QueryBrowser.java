@@ -70,6 +70,7 @@ public class QueryBrowser extends ListActivity implements Music.Defs
         super.onCreate(icicle);
         setVolumeControlStream(AudioManager.STREAM_MUSIC);
         Music.bindToService(this);
+        Music.connectToDb( this );
         
         if (icicle == null) {
             Intent intent = getIntent();
@@ -141,13 +142,14 @@ public class QueryBrowser extends ListActivity implements Music.Defs
     @Override
     public void onDestroy() {
         Music.unbindFromService(this);
-        super.onDestroy();
         if (!mAdapterSent && mAdapter != null) {
             Cursor c = mAdapter.getCursor();
             if (c != null) {
                 c.close();
             }
         }
+        Music.unconnectFromDb( this );
+        super.onDestroy();
     }
     
     @Override
