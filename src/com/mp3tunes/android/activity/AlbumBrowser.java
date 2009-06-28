@@ -715,7 +715,6 @@ public class AlbumBrowser extends ListActivity
         {
             dismissDialog( PROGRESS );
             Music.setSpinnerState(AlbumBrowser.this, false);
-            mArtFetcher = new FetchArtTask().execute();
             if( cursor != null)
                 AlbumBrowser.this.init(cursor);
             else
