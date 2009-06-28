@@ -3,8 +3,8 @@
     xmlns:android="http://schemas.android.com/apk/res/android">
 
     <PreferenceCategory
-        android:title="Scrobbler"
-        android:summary="Penguin down now!">
+        android:title="Preferences"
+        android:summary="">
 
         <CheckBoxPreference
             android:key="cacheart"
@@ -13,10 +13,10 @@
             android:summary="Save cover art onthe SD Card (saves bandwidth, and loads faster)." />
 
         <CheckBoxPreference
-            android:key="browseinitial"
+            android:key="autoupdate"
             android:defaultValue="false"
-            android:title="Browse Artists by Initial"
-            android:summary="Useful if you have lots of artists." />
+            android:title="Automatically check for locker updates."
+            android:summary="If enabled your locker will be periodically checked for updates." />
         <ListPreference
             android:key="bitrate"
             android:title="Streaming Rate"
