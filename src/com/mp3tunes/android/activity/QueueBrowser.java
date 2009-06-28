@@ -39,6 +39,7 @@ import android.view.ContextMenu;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.Menu;
+import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
@@ -819,10 +820,55 @@ public class QueueBrowser extends ListActivity implements View.OnCreateContextMe
         }
          Music.playAll(this, mTrackCursor, position);
     }
+    
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        super.onCreateOptionsMenu(menu);
+        MenuInflater inflater = getMenuInflater();
+        inflater.inflate(R.menu.artists, menu);
+        return true;
+    }
 
     @Override
-    public boolean onCreateOptionsMenu( Menu menu )
-    {
+    public boolean onPrepareOptionsMenu(Menu menu) {
+        menu.findItem(R.id.menu_opt_player).setVisible( Music.isMusicPlaying() );
+        return super.onPrepareOptionsMenu(menu);
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        Intent intent;
+        switch (item.getItemId()) {
+            case R.id.menu_opt_home:
+                intent = new Intent();
+                intent.setClass(this, LockerList.class);
+                intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+                startActivity(intent);
+                return true;
+
+            case R.id.menu_opt_player:
+                intent = new Intent("com.mp3tunes.android.PLAYER");
+                startActivity(intent);
+                return true;
+
+            case SHUFFLE_ALL:
+                //TODO shuffle all
+//                cursor = Music.query(this, MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
+//                        new String [] { MediaStore.Audio.Media._ID},
+//                        MediaStore.Audio.Media.IS_MUSIC + "=1", null,
+//                        MediaStore.Audio.Media.DEFAULT_SORT_ORDER);
+//                if (cursor != null) {
+//                    Music.shuffleAll(this, cursor);
+//                    cursor.close();
+//                }
+                return true;
+        }
+        return super.onOptionsItemSelected(item);
+    }
+
+//    @Override
+//    public boolean onCreateOptionsMenu( Menu menu )
+//    {
         // /* This activity is used for a number of different browsing modes,
         // and the menu can
         // * be different for each of them:
@@ -849,12 +895,12 @@ public class QueueBrowser extends ListActivity implements View.OnCreateContextMe
         // R.string.clear_playlist).setIcon(com.android.internal.R.drawable.ic_menu_clear_playlist);
         // }
         // }
-        return true;
-    }
-
-    @Override
-    public boolean onOptionsItemSelected( MenuItem item )
-    {
+//        return true;
+//    }
+//
+//    @Override
+//    public boolean onOptionsItemSelected( MenuItem item )
+//    {
         // Intent intent;
         // Cursor cursor;
         // switch (item.getItemId()) {
@@ -900,8 +946,8 @@ public class QueueBrowser extends ListActivity implements View.OnCreateContextMe
         // Music.clearQueue();
         // return true;
         // }
-        return super.onOptionsItemSelected( item );
-    }
+//        return super.onOptionsItemSelected( item );
+//    }
 
     // @Override
     // protected void onActivityResult(int requestCode, int resultCode, Intent
