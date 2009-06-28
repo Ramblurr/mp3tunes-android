@@ -20,21 +20,12 @@
 package com.mp3tunes.android.activity;
 
 import java.util.ArrayList;
-import java.util.Stack;
 
-import com.binaryelysium.mp3tunes.api.Locker;
-import com.binaryelysium.mp3tunes.api.Token;
-import com.mp3tunes.android.AlphabetIndexer;
 import com.mp3tunes.android.ListAdapter;
 import com.mp3tunes.android.ListEntry;
-import com.mp3tunes.android.LockerDb;
-import com.mp3tunes.android.MP3tunesApplication;
 import com.mp3tunes.android.Music;
 import com.mp3tunes.android.R;
-import com.mp3tunes.android.LockerDb.DbSearchQuery;
-import com.mp3tunes.android.activity.QueueBrowser.TrackListAdapter;
 import com.mp3tunes.android.service.Mp3tunesService;
-import com.mp3tunes.android.util.UserTask;
 
 import android.app.Dialog;
 import android.app.ListActivity;
@@ -51,23 +42,14 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.os.RemoteException;
-import android.util.Log;
-import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.Window;
-import android.view.View.OnClickListener;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
-import android.widget.Button;
-import android.widget.EditText;
-import android.widget.ImageButton;
-import android.widget.LinearLayout;
 import android.widget.ListView;
-import android.widget.TextView;
-import android.widget.ViewFlipper;
 
 /**
  * Primary activity that encapsulates browsing the locker
@@ -77,8 +59,6 @@ import android.widget.ViewFlipper;
  */
 public class LockerList extends ListActivity implements ServiceConnection
 {
-    private EditText mSearchField;
-
     // the database cursor
     private Cursor mCursor = null;
 
@@ -126,21 +106,6 @@ public class LockerList extends ListActivity implements ServiceConnection
     private Animation mRTLanim;
 
     private IntentFilter mIntentFilter;
-
-    /**
-     * Encapsulates the required fields to store a browsing state.
-     */
-    private class HistoryUnit
-    {
-
-        public int state; // See LockerList.STATE
-        public ListAdapter adapter;
-        public HistoryUnit( int s, ListAdapter a )
-        {
-            state = s;
-            adapter = a;
-        }
-    }
 
     @Override
     public void onCreate( Bundle icicle )
@@ -271,17 +236,6 @@ public class LockerList extends ListActivity implements ServiceConnection
         }
         return false;
     }
-    
-    OnClickListener mSearchListener = new OnClickListener()
-    {
-    
-        public void onClick( View arg0 )
-        {
-//            mHeaderText.setVisibility( View.INVISIBLE );
-//            new SearchTask().execute( mSearchField.getText().toString() );
-            
-        }
-    };
 
     /** displays the main menu */
     private void displayMainMenu( int sense )

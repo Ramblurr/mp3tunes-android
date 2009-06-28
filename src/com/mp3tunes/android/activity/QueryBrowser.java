@@ -15,14 +15,10 @@
  */
 package com.mp3tunes.android.activity;
 
-import java.util.ArrayList;
-
 import android.app.AlertDialog;
 import android.app.Dialog;
 import android.app.ListActivity;
 import android.app.SearchManager;
-import android.content.AsyncQueryHandler;
-import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
 
@@ -33,7 +29,6 @@ import android.media.AudioManager;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
-import android.provider.MediaStore;
 import android.text.TextUtils;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -45,13 +40,9 @@ import android.widget.ListView;
 import android.widget.SimpleCursorAdapter;
 import android.widget.TextView;
 
-import com.mp3tunes.android.ListAdapter;
-import com.mp3tunes.android.ListEntry;
 import com.mp3tunes.android.LockerDb;
 import com.mp3tunes.android.Music;
 import com.mp3tunes.android.R;
-import com.mp3tunes.android.LockerDb.DbSearchQuery;
-import com.mp3tunes.android.util.UserTask;
 
 public class QueryBrowser extends ListActivity implements Music.Defs
 {
