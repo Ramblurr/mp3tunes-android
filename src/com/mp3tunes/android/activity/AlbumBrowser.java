@@ -754,7 +754,9 @@ public class AlbumBrowser extends ListActivity
             try
             {
                 int lim = list.length;
-                for(int i = 0; i < lim; i++) {
+                for(int i = 0; i < lim; i++) 
+                {
+                    if ( isCancelled() ) break;
                     Music.sDb.fetchArt( list[i] );
                     publishProgress( i, lim );
                 }
