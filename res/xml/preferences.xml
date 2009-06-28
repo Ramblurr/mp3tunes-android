@@ -10,12 +10,12 @@
             android:key="cacheart"
             android:defaultValue="true"
             android:title="Cache Cover Art"
-            android:summary="Save cover art onthe SD Card (saves bandwidth, and loads faster)." />
+            android:summary="Save cover art on the SD Card (saves bandwidth, and loads faster)." />
 
         <CheckBoxPreference
             android:key="autoupdate"
             android:defaultValue="false"
-            android:title="Automatically check for locker updates."
+            android:title="Synchronize Locker"
             android:summary="If enabled your locker will be periodically checked for updates." />
         <ListPreference
             android:key="bitrate"
