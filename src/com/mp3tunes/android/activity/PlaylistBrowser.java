@@ -17,10 +17,7 @@
 package com.mp3tunes.android.activity;
 
 import android.app.ListActivity;
-import android.app.SearchManager;
-import android.content.AsyncQueryHandler;
 import android.content.BroadcastReceiver;
-import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
@@ -34,38 +31,27 @@ import android.media.AudioManager;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
-import android.os.Handler;
-import android.os.Message;
-import android.provider.MediaStore;
 import android.view.ContextMenu;
 import android.view.Menu;
+import android.view.MenuInflater;
 import android.view.MenuItem;
-import android.view.SubMenu;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.Window;
 import android.view.ContextMenu.ContextMenuInfo;
-import android.widget.Adapter;
 import android.widget.AlphabetIndexer;
-import android.widget.CursorAdapter;
 import android.widget.ImageView;
-import android.widget.ListAdapter;
 import android.widget.ListView;
 import android.widget.SectionIndexer;
 import android.widget.SimpleCursorAdapter;
 import android.widget.TextView;
 import android.widget.AdapterView.AdapterContextMenuInfo;
 
-import com.binaryelysium.mp3tunes.api.Locker;
-import com.binaryelysium.mp3tunes.api.Token;
 import com.mp3tunes.android.LockerDb;
-import com.mp3tunes.android.MP3tunesApplication;
 import com.mp3tunes.android.Music;
 import com.mp3tunes.android.MusicAlphabetIndexer;
 import com.mp3tunes.android.R;
 import com.mp3tunes.android.service.Mp3tunesService;
-
-import java.text.Collator;
 
 public class PlaylistBrowser extends ListActivity
     implements View.OnCreateContextMenuListener, Music.Defs
@@ -78,10 +64,6 @@ public class PlaylistBrowser extends ListActivity
     private static final int DELETE_PLAYLIST = CHILD_MENU_BASE + 1;
     private static final int EDIT_PLAYLIST = CHILD_MENU_BASE + 2;
     private static final int RENAME_PLAYLIST = CHILD_MENU_BASE + 3;
-    private static final int CHANGE_WEEKS = CHILD_MENU_BASE + 4;
-    private static final long RECENTLY_ADDED_PLAYLIST = -1;
-    private static final long ALL_SONGS_PLAYLIST = -2;
-    private static final long PODCASTS_PLAYLIST = -3;
     private AsyncTask mPlaylistTask;
     private AsyncTask mTracksTask;
 
@@ -217,17 +199,13 @@ public class PlaylistBrowser extends ListActivity
 
         menu.add(0, PLAY_SELECTION, 0, R.string.menu_play_selection);
 
-        if (mi.id >= 0  ) {
-            menu.add(0, DELETE_PLAYLIST, 0, R.string.menu_delete);
-        }
-
-        if (mi.id == RECENTLY_ADDED_PLAYLIST) {
-            menu.add(0, EDIT_PLAYLIST, 0, R.string.menu_edit_playlist);
-        }
-
-        if (mi.id >= 0) {
-            menu.add(0, RENAME_PLAYLIST, 0, R.string.menu_rename_playlist);
-        }
+//        if (mi.id >= 0  ) {
+//            menu.add(0, DELETE_PLAYLIST, 0, R.string.menu_delete);
+//        }
+//
+//        if (mi.id >= 0) {
+//            menu.add(0, RENAME_PLAYLIST, 0, R.string.menu_rename_playlist);
+//        }
 
         mPlaylistCursor.moveToPosition(mi.position);
         mCurrentPlaylistName = mPlaylistCursor.getString(Music.PLAYLIST_MAPPING.PLAYLIST_NAME);
@@ -276,45 +254,33 @@ public class PlaylistBrowser extends ListActivity
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         super.onCreateOptionsMenu(menu);
-        menu.add(0, GOTO_START, 0, R.string.menu_home).setIcon(R.drawable.ic_mp_song_playback);
-        menu.add(0, GOTO_PLAYBACK, 0, R.string.menu_player).setIcon(R.drawable.ic_mp_song_playback);
-        menu.add(0, SHUFFLE_ALL, 0, R.string.menu_shuffle_all).setIcon(R.drawable.ic_mp_song_playback);
+        MenuInflater inflater = getMenuInflater();
+        inflater.inflate(R.menu.artists, menu);
         return true;
     }
 
     @Override
     public boolean onPrepareOptionsMenu(Menu menu) {
-        menu.findItem(GOTO_PLAYBACK).setVisible(Music.isMusicPlaying());
+        menu.findItem(R.id.menu_opt_player).setVisible( Music.isMusicPlaying() );
+        menu.findItem(R.id.menu_opt_shuffleall).setVisible( false );
+        menu.findItem(R.id.menu_opt_playall).setVisible( false );
         return super.onPrepareOptionsMenu(menu);
     }
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         Intent intent;
-        Cursor cursor;
         switch (item.getItemId()) {
-            case GOTO_START:
+            case R.id.menu_opt_home:
                 intent = new Intent();
                 intent.setClass(this, LockerList.class);
                 intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
                 startActivity(intent);
                 return true;
 
-            case GOTO_PLAYBACK:
+            case R.id.menu_opt_player:
                 intent = new Intent("com.mp3tunes.android.PLAYER");
                 startActivity(intent);
-                return true;
-
-            case SHUFFLE_ALL:
-                //TODO shuffle all
-//                cursor = Music.query(this, MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
-//                        new String [] { MediaStore.Audio.Media._ID},
-//                        MediaStore.Audio.Media.IS_MUSIC + "=1", null,
-//                        MediaStore.Audio.Media.DEFAULT_SORT_ORDER);
-//                if (cursor != null) {
-//                    Music.shuffleAll(this, cursor);
-//                    cursor.close();
-//                }
                 return true;
         }
         return super.onOptionsItemSelected(item);
