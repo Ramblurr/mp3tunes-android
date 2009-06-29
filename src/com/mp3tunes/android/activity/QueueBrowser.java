@@ -1264,7 +1264,7 @@ public class QueueBrowser extends ListActivity implements View.OnCreateContextMe
                 if(mAlbumId != null)
                     cursor = Music.sDb.getTracksForAlbum( Integer.valueOf( mAlbumId ) );
                 else if(mPlaylist != null )
-                    cursor = Music.sDb.getTracksForPlaylist( Integer.valueOf( mPlaylist ) );
+                    cursor = Music.sDb.getTracksForPlaylist( mPlaylist );
                 else
                     cursor = Music.sDb.getTableList( Music.Meta.TRACK );
                 

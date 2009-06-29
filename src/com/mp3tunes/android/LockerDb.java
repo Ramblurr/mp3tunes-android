@@ -68,7 +68,7 @@ public class LockerDb
     private SQLiteDatabase mDb;
 
     private static final String DB_NAME = "locker.dat";
-    private static final int DB_VERSION = 2;
+    private static final int DB_VERSION = 3;
     
     public static final String UNKNOWN_STRING = "Unknown";
 
@@ -345,7 +345,7 @@ public class LockerDb
         return null;
     }
     
-    public Cursor getTracksForPlaylist( int playlist_id )
+    public Cursor getTracksForPlaylist( String playlist_id )
     {
         Cursor c = mDb.rawQuery( "SELECT playlist_name FROM playlist WHERE _id=" + playlist_id, null );
         if ( !c.moveToNext() ) {
@@ -932,7 +932,7 @@ public class LockerDb
     
     private void refreshPlaylists()  throws SQLiteException, IOException
     {
-        DataResult<Playlist> results = mLocker.getPlaylists();
+        DataResult<Playlist> results = mLocker.getPlaylists( false );
         System.out.println( "beginning insertion of " + results.getData().length + " playlists" );
         for ( Playlist p : results.getData() )
         {
@@ -1002,7 +1002,7 @@ public class LockerDb
         System.out.println( "insertion complete" );
     }
     
-    private void refreshTracksforPlaylist(int playlist_id)  throws SQLiteException, IOException
+    private void refreshTracksforPlaylist( String playlist_id )  throws SQLiteException, IOException
     {
         DataResult<Track> results = mLocker.getTracksForPlaylist( playlist_id );
         System.out.println( "beginning insertion of " + results.getData().length + " tracks for playlist id " +playlist_id );
@@ -1097,7 +1097,7 @@ public class LockerDb
         return mDb.query( "playlist", Music.PLAYLIST, null, null, null, null, "lower("+Music.PLAYLIST[1]+")" );   
     }
 
-    private Cursor queryPlaylists( int playlist_id )
+    private Cursor queryPlaylists( String playlist_id )
         {
             String selection = "track._id _id, title, artist_name, artist_id, album_name, album_id, track, play_url, download_url, track_length, cover_url";
     //        String table = "playlist " + "JOIN playlist_tracks ON playlist._id = playlist_tracks.playlist_id "
@@ -1262,9 +1262,9 @@ public class LockerDb
             db.execSQL( "CREATE TABLE album(" + "_id INTEGER PRIMARY KEY," + "album_name VARCHAR, "
                     + "artist_id INTEGER," + "artist_name VARCHAR," + "track_count INTEGER,"
                     + "year INTEGER," + "cover_url VARCHAR DEFAULT NULL" + ")" );
-            db.execSQL( "CREATE TABLE playlist(" + "_id INTEGER PRIMARY KEY," + "playlist_name VARCHAR, "
+            db.execSQL( "CREATE TABLE playlist(" + "_id VARCHAR PRIMARY KEY," + "playlist_name VARCHAR, "
                     + "file_count INTEGER," + "file_name VARCHAR" + ")" );
-            db.execSQL( "CREATE TABLE playlist_tracks(" + "playlist_id INTEGER," + "track_id INTEGER" + ")" );
+            db.execSQL( "CREATE TABLE playlist_tracks(" + "playlist_id VARCHAR," + "track_id INTEGER" + ")" );
             db.execSQL( "CREATE TABLE token(" + "type VARCHAR," + "token VARCHAR," + "count INTEGER" + ")" );
             db.execSQL( "CREATE TABLE current_playlist(" + "pos INTEGER PRIMARY KEY,"
                     + "track_id INTEGER" + ")" );

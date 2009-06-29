@@ -160,13 +160,13 @@ public class PlaylistBrowser extends ListActivity
         if( mPlaylistTask != null && mPlaylistTask.getStatus() == AsyncTask.Status.RUNNING)
             mPlaylistTask.cancel( true );
         Music.unbindFromService(this);
-        Music.unconnectFromDb( this );
         if (!mAdapterSent) {
             Cursor c = mAdapter.getCursor();
             if (c != null) {
                 c.close();
             }
         }
+        Music.unconnectFromDb( this );
         super.onDestroy();
     }
     
@@ -268,7 +268,7 @@ public class PlaylistBrowser extends ListActivity
         String playlist_name = c.getString(Music.PLAYLIST_MAPPING.PLAYLIST_NAME);
         Intent intent = new Intent(Intent.ACTION_EDIT);
         intent.setDataAndType(Uri.EMPTY, "vnd.mp3tunes.android.dir/track");
-        intent.putExtra("playlist", Long.valueOf(playlist).toString());
+        intent.putExtra("playlist", playlist);
         intent.putExtra("playlist_name", playlist_name);
         startActivity(intent);
     }
@@ -475,7 +475,7 @@ public class PlaylistBrowser extends ListActivity
             try
             {
                 if( Music.sDb!= null)
-                cursor = Music.sDb.getTableList( Music.Meta.PLAYLIST );
+                    cursor = Music.sDb.getTableList( Music.Meta.PLAYLIST );
                 else
                     System.out.println("database null");
 //                Token[] t = Music.sDb.getTokens( Music.Meta.ARTIST );
@@ -522,7 +522,7 @@ public class PlaylistBrowser extends ListActivity
             try
             {
                 if( Music.sDb!= null)
-                    cursor = Music.sDb.getTracksForPlaylist( playlist_id );
+                    cursor = Music.sDb.getTracksForPlaylist( Integer.toString( playlist_id ) );
                 else
                     System.out.println("database null");
             }
