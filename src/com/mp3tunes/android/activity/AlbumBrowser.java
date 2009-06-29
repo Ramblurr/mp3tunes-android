@@ -59,8 +59,6 @@ import com.mp3tunes.android.Music;
 import com.mp3tunes.android.MusicAlphabetIndexer;
 import com.mp3tunes.android.R;
 import com.mp3tunes.android.service.Mp3tunesService;
-import com.mp3tunes.android.util.ImageCache;
-import com.mp3tunes.android.util.ImageDownloader;
 import com.mp3tunes.android.util.ImageDownloaderListener;
 
 import java.text.Collator;
@@ -507,9 +505,6 @@ public class AlbumBrowser extends ListActivity
         private String mConstraint = null;
         private boolean mConstraintIsValid = false;
         
-        protected transient ImageCache mImageCache;
-        protected transient ImageDownloader mImageDownloader;
-        
         class ViewHolder {
             TextView line1;
             TextView line2;
@@ -667,13 +662,7 @@ public class AlbumBrowser extends ListActivity
         public void asynOperationStarted()
         {
             System.out.println("image fetch started");
-        }
-        
-        public void setImageCache( ImageCache imageCache ) {
-            mImageDownloader = new ImageDownloader(imageCache);
-            mImageDownloader.setListener(this);
-            mImageCache = imageCache;
-    }
+        }        
     }
 
     /**

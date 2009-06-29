@@ -35,7 +35,6 @@ import com.mp3tunes.android.Music;
 import com.mp3tunes.android.R;
 import com.mp3tunes.android.activity.Login;
 import com.mp3tunes.android.activity.Player;
-import com.mp3tunes.android.util.UserTask;
 
 import android.app.Notification;
 import android.app.NotificationManager;
@@ -53,6 +52,7 @@ import android.media.MediaPlayer.OnPreparedListener;
 import android.net.ConnectivityManager;
 import android.net.wifi.WifiManager;
 import android.net.wifi.WifiManager.WifiLock;
+import android.os.AsyncTask;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Message;
@@ -823,7 +823,7 @@ public class Mp3tunesService extends Service
 
     };
     
-    private class NextTrackTask extends UserTask<Void, Void, Boolean> {
+    private class NextTrackTask extends AsyncTask<Void, Void, Boolean> {
 
         public Boolean doInBackground(Void... input) {
             boolean success = false;
@@ -930,7 +930,7 @@ public class Mp3tunesService extends Service
         public abstract void onPostExecute();
     }
     
-    private class RefreshSessionTask extends UserTask<Void, Void, Boolean> {
+    private class RefreshSessionTask extends AsyncTask<Void, Void, Boolean> {
 
         public void onPreExecute()
         {}

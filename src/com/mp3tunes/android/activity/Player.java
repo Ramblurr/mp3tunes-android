@@ -13,6 +13,7 @@ import android.content.ServiceConnection;
 import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.net.Uri;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
@@ -35,7 +36,6 @@ import com.mp3tunes.android.R;
 import com.mp3tunes.android.RemoteImageHandler;
 import com.mp3tunes.android.RemoteImageView;
 import com.mp3tunes.android.service.Mp3tunesService;
-import com.mp3tunes.android.util.UserTask;
 import com.mp3tunes.android.util.Worker;
 
 
@@ -433,7 +433,7 @@ public class Player extends Activity
         }
     };
     
-    private class LoadAlbumArtTask extends UserTask<Void, Void, Boolean> 
+    private class LoadAlbumArtTask extends AsyncTask<Void, Void, Boolean> 
     {
         String artUrl;
 

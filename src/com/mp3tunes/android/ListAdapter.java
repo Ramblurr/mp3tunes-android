@@ -32,6 +32,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AbsListView;
+import android.widget.AlphabetIndexer;
 import android.widget.BaseAdapter;
 import android.widget.ImageView;
 import android.widget.SectionIndexer;
@@ -39,9 +40,6 @@ import android.widget.TextView;
 import android.widget.ViewSwitcher;
 
 import com.mp3tunes.android.R;
-import com.mp3tunes.android.util.ImageCache;
-import com.mp3tunes.android.util.ImageDownloader;
-import com.mp3tunes.android.util.ImageDownloaderListener;
 
 
 import java.io.IOException;
@@ -56,11 +54,9 @@ import java.io.Serializable;
  * @author Lukasz Wisniewski
  * @author Casey Link
  */
-public class ListAdapter extends BaseAdapter implements Serializable, ImageDownloaderListener, SectionIndexer {
+public class ListAdapter extends BaseAdapter implements Serializable, SectionIndexer {
 
         private static final long serialVersionUID = -4219322831181525818L;
-        protected transient ImageCache mImageCache;
-        protected transient ImageDownloader mImageDownloader;
         protected transient Activity mContext;
 
         private ArrayList<ListEntry> mList;
@@ -91,17 +87,6 @@ public class ListAdapter extends BaseAdapter implements Serializable, ImageDownl
         }
 
         /**
-         * Default constructor
-         *
-         * @param context
-         * @param imageCache
-         */
-        public ListAdapter(Activity context, ImageCache imageCache) {
-                mContext = context;
-                init(imageCache);
-        }
-
-        /**
      * Constructor that takes an array of strings as data
      *
      * @param context
@@ -117,24 +102,6 @@ public class ListAdapter extends BaseAdapter implements Serializable, ImageDownl
             mList.add(entry);
         }
     }
-
-        /**
-         * Sharable code between constructors
-         *
-         * @param imageCache
-         */
-        private void init(ImageCache imageCache){
-                setImageCache(imageCache);
-                mList = new ArrayList<ListEntry>();
-        }
-        
-//         private void getAlphabet(Context context) {
-//             String alphabetString = context.getResources().getString(R.string.alphabet);
-//             mAlphabet = new String[alphabetString.length()];
-//             for (int i = 0; i < mAlphabet.length; i++) {
-//                 mAlphabet[i] = String.valueOf(alphabetString.charAt(i));
-//             }
-//         }
 
         public View getView(int position, View convertView, ViewGroup parent)
         {
@@ -183,12 +150,7 @@ public class ListAdapter extends BaseAdapter implements Serializable, ImageDownl
 
                 // optionally if an URL is specified
                 if(mList.get(position).url != null){
-                        Bitmap bmp = mImageCache.get(mList.get(position).url);
-                        if(bmp != null){
-                                holder.image.setImageBitmap(bmp);
-                        } else {
-                                holder.image.setImageResource(mList.get(position).icon_id);
-                        }
+                        holder.image.setImageResource(mList.get(position).icon_id);
                 } else if( mList.get(position).icon_id >= 0 ) {
 
                         holder.image.setImageResource(mList.get(position).icon_id);
@@ -242,17 +204,6 @@ public class ListAdapter extends BaseAdapter implements Serializable, ImageDownl
                     if(entry.url != null){
                             urls.add(entry.url);
                     }
-                }
-
-
-//              super.setSource(oldList);
-
-                try {
-                        if(mImageDownloader != null && mImageDownloader.getUserTask() == null){
-                                mImageDownloader.getImages(urls);
-                        }
-                } catch (java.util.concurrent.RejectedExecutionException e) {
-                        e.printStackTrace();
                 }
         }
         
@@ -337,12 +288,6 @@ public class ListAdapter extends BaseAdapter implements Serializable, ImageDownl
                 return position;
         }
 
-        public void setImageCache( ImageCache imageCache ) {
-                mImageDownloader = new ImageDownloader(imageCache);
-                mImageDownloader.setListener(this);
-                mImageCache = imageCache;
-        }
-
         public void setDisabled() {
                 mEnabled = false;
         }
@@ -365,7 +310,7 @@ public class ListAdapter extends BaseAdapter implements Serializable, ImageDownl
             if (mIndexer == null)
                 return 0;
 
-            return mIndexer.indexOf(sectionIndex);
+            return mIndexer.getPositionForSection( sectionIndex );
         }
 
         public int getSectionForPosition( int position )
