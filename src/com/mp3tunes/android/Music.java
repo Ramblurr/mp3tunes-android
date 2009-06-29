@@ -430,18 +430,15 @@ public class Music
                 // figure out if we need to restart with a new playlist,
                 // or just launch the playback activity.
                 int [] playlist = sDb.getQueue();
-                if (Arrays.equals(list, playlist)) {
-                    // we don't need to set a new list, but we should resume playback if needed
-                    sService.pause();
+                if (Arrays.equals(list, playlist))
                     return; // the 'finally' block will still run
-                }
             }
             if (position < 0) {
                 position = 0;
             }
             Music.sDb.clearQueue();
             Music.sDb.insertQueueItems( list );
-            sService.start();
+            sService.startAt( position + 1 ); // +1 because the dbase queue is 1-indexed
         } catch (RemoteException ex) {
         } finally {
             Intent intent = new Intent("com.mp3tunes.android.PLAYER")

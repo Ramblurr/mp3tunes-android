@@ -815,9 +815,7 @@ public class QueueBrowser extends ListActivity implements View.OnCreateContextMe
     protected void onListItemClick( ListView l, View v, int position, long id )
     {
         if ( mTrackCursor.getCount() == 0 )
-        {
             return;
-        }
          Music.playAll(this, mTrackCursor, position);
     }
     
