@@ -107,7 +107,6 @@ public class Player extends Activity
         mIntentFilter.addAction(Mp3tunesService.PLAYBACK_STATE_CHANGED);
         mIntentFilter.addAction(Mp3tunesService.PLAYBACK_ERROR);
         mIntentFilter.addAction(Mp3tunesService.DATABASE_ERROR);
-        updateTrackInfo();
     }
     
     @Override
