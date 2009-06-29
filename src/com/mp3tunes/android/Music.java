@@ -186,7 +186,10 @@ public class Music
     {
         boolean res = sDbConnectionMap.remove( context );
         if( sDbConnectionMap.isEmpty() )
+        {
             sDb.close();
+            sDb = null;
+        }
         return res;
     }
     
