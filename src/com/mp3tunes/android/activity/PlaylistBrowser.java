@@ -240,7 +240,7 @@ public class PlaylistBrowser extends ListActivity
         switch (item.getItemId()) {
             case PLAY_SELECTION: {
                 // play the selected playlist
-                mTracksTask = new FetchTracksTask().execute( Integer.valueOf( mCurrentPlaylistId ), PLAY_SELECTION );
+                mTracksTask = new FetchTracksTask().execute( mCurrentPlaylistId, Integer.toString( PLAY_SELECTION ) );
                 return true;
             }
 
@@ -501,7 +501,7 @@ public class PlaylistBrowser extends ListActivity
         }
     }
     
-    private class FetchTracksTask extends AsyncTask<Integer, Void, Boolean>
+    private class FetchTracksTask extends AsyncTask<String, Void, Boolean>
     {
         String[] tokens= null;
         Cursor cursor;
@@ -513,16 +513,16 @@ public class PlaylistBrowser extends ListActivity
         }
 
         @Override
-        public Boolean doInBackground( Integer... params )
+        public Boolean doInBackground( String... params )
         {
             if(params.length <= 1)
                 return false;
-            int playlist_id = params[0];
-            action = params[1];
+            String playlist_id = params[0];
+            action = Integer.valueOf( params[1] );
             try
             {
                 if( Music.sDb!= null)
-                    cursor = Music.sDb.getTracksForPlaylist( Integer.toString( playlist_id ) );
+                    cursor = Music.sDb.getTracksForPlaylist( playlist_id );
                 else
                     System.out.println("database null");
             }

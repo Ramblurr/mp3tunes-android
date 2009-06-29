@@ -347,7 +347,7 @@ public class LockerDb
     
     public Cursor getTracksForPlaylist( String playlist_id )
     {
-        Cursor c = mDb.rawQuery( "SELECT playlist_name FROM playlist WHERE _id=" + playlist_id, null );
+        Cursor c = mDb.rawQuery( "SELECT playlist_name FROM playlist WHERE _id='" + playlist_id + "'", null );
         if ( !c.moveToNext() ) {
             //TODO fetch the playlist?
             Log.e( "Mp3tunes", "Error playlist doesnt exist" );
@@ -355,7 +355,6 @@ public class LockerDb
         }
         c.close();
         c = queryPlaylists( playlist_id );
-
         if( c.getCount() > 0 )
             return c;
         else
@@ -1007,7 +1006,7 @@ public class LockerDb
         DataResult<Track> results = mLocker.getTracksForPlaylist( playlist_id );
         System.out.println( "beginning insertion of " + results.getData().length + " tracks for playlist id " +playlist_id );
         
-        mDb.delete( "playlist_tracks", "playlist_id=" + playlist_id, null );
+        mDb.delete( "playlist_tracks", "playlist_id='" + playlist_id + "'", null );
         for ( Track t : results.getData() )
         {
             ContentValues cv = new ContentValues(); // TODO move this outside the loop?
@@ -1100,16 +1099,11 @@ public class LockerDb
     private Cursor queryPlaylists( String playlist_id )
         {
             String selection = "track._id _id, title, artist_name, artist_id, album_name, album_id, track, play_url, download_url, track_length, cover_url";
-    //        String table = "playlist " + "JOIN playlist_tracks ON playlist._id = playlist_tracks.playlist_id "
-    //                    + "JOIN track ON playlist_tracks.track_id = track._id" +
-    //                            "";  
-    //        String where =  "playlist_id="+playlist_id;
-    //        return mDb.query( true, table, Music.TRACK, where, null, null, null, null, null );
             return mDb.rawQuery( 
                     "SELECT DISTINCT " + selection + " FROM playlist " +
                     "JOIN playlist_tracks ON playlist._id = playlist_tracks.playlist_id " +
                     "JOIN track ON playlist_tracks.track_id = track._id " +
-                    "WHERE playlist_id="+playlist_id, null );
+                    "WHERE playlist_id='"+playlist_id+"'", null );
        
         }
 
