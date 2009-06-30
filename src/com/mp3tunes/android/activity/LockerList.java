@@ -31,16 +31,13 @@ import android.app.Dialog;
 import android.app.ListActivity;
 import android.app.ProgressDialog;
 import android.content.BroadcastReceiver;
-import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.content.ServiceConnection;
 import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.Bundle;
-import android.os.IBinder;
 import android.os.RemoteException;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -73,9 +70,6 @@ public class LockerList extends ListActivity
     // number of main menu options
     private static final int mMainOptsNum = 5;
 
-    // position of the id column in the dbase cursor (see LockerDb)
-    private static final int ID = 2;
-
     // C++ style enum of the possible states of the LockerList
     private static final class STATE
     {
@@ -99,8 +93,6 @@ public class LockerList extends ListActivity
     private static final int TRANSLATION_RIGHT = 1;
     
     private static final int DIALOG_REFRESH = 0;
-
-    private static final String TAG = "LockerList";
 
     private Animation mLTRanim;
     private Animation mRTLanim;
@@ -341,22 +333,6 @@ public class LockerList extends ListActivity
         return null;
 
     }
-    
-  private ArrayList<ListEntry> entriesFromCursor( int id_field, int icon_id, int text_id, int disclosure_id, Cursor cursor, Music.Meta type )
-  {
-      ArrayList<ListEntry> iconifiedEntries = new ArrayList<ListEntry>();
-      System.out.println("Cursor size: " + cursor.getCount());
-      while ( cursor.moveToNext() )
-      {
-          ListEntry entry = new ListEntry( cursor.getInt( id_field ), icon_id == -1 ? null
-                  : icon_id, cursor.getString( text_id ), disclosure_id );
-          entry.setSecondValue( type );
-          iconifiedEntries.add( entry );
-
-      }
-      System.out.println("made entries: " + iconifiedEntries.size());
-      return iconifiedEntries;
-  }
   
   private void performSlide( int sense )
   {
@@ -368,14 +344,6 @@ public class LockerList extends ListActivity
       {
           getListView().startAnimation( mLTRanim );
       }
-  }
-  
-  private void playTrack( int track_id )
-  {
-      Music.sDb.clearQueue();
-      Music.sDb.appendQueueItem( track_id );
-      System.out.println("playlist size: " + Music.sDb.getQueueSize());
-      showPlayer();
   }
   
   private void showPlayer()
