@@ -21,10 +21,11 @@
     <!-- icon is used for albumart, the grabber in edit playlist mode, and the playlist icon in the list of playlists -->
     <ImageView android:id="@+id/icon"
         android:layout_alignParentLeft="true"
-        android:layout_alignParentTop="true"
-        android:layout_alignParentBottom="true"
+        android:gravity="center_vertical"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"/>
+<!--                android:layout_alignParentTop="true"-->
+<!--        android:layout_alignParentBottom="true"-->
 
     <TextView android:id="@+id/duration"
         android:textSize="12sp"
