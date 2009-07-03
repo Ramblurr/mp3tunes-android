@@ -1,22 +1,16 @@
 package com.mp3tunes.android.activity;
 
-import java.util.Formatter;
-
 import android.app.Activity;
 import android.app.ProgressDialog;
 import android.content.BroadcastReceiver;
-import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.content.ServiceConnection;
-import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
-import android.os.IBinder;
 import android.os.Message;
 import android.os.RemoteException;
 import android.view.Menu;
@@ -45,7 +39,6 @@ public class Player extends Activity
 
     private ImageButton mPrevButton;
     private ImageButton mPlayButton;
-    private ImageButton mStopButton;
     private ImageButton mNextButton;
     private ImageButton mQueueButton;
     private RemoteImageView mAlbum;
