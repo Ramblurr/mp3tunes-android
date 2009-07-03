@@ -1093,7 +1093,12 @@ public class LockerDb
 
     private Cursor queryPlaylists()
     {
-        return mDb.query( "playlist", Music.PLAYLIST, null, null, null, null, "lower("+Music.PLAYLIST[1]+")" );   
+        String order = "CASE WHEN _id='"+Playlist.RECENTLY_PLAYED+"' THEN playlist_name " +  
+                       "WHEN _id='"+Playlist.INBOX+"' THEN playlist_name " +
+                       "WHEN _id='"+Playlist.NEWEST_TRACKS+"' THEN playlist_name " +
+                       "WHEN _id='"+Playlist.RANDOM_TRACKS+"' THEN playlist_name " +
+                       "ELSE playlist_name END DESC";
+        return mDb.query( "playlist", Music.PLAYLIST, null, null, null, null, order );
     }
 
     private Cursor queryPlaylists( String playlist_id )
