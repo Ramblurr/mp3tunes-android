@@ -63,6 +63,7 @@ public class Player extends Activity
     private Worker mAlbumArtWorker;
     private RemoteImageHandler mAlbumArtHandler;
     private IntentFilter mIntentFilter;
+    private AsyncTask mArtTask;
     
     @Override
     public void onCreate( Bundle icicle )
@@ -346,8 +347,10 @@ public class Player extends Activity
             Bitmap bit = Music.getArtworkQuick( Player.this, album_id, mAlbum.getWidth(), mAlbum.getHeight() );
             mAlbum.setArtwork( bit );
             mAlbum.invalidate();
-            if (bit == null)
-                 new LoadAlbumArtTask().execute((Void) null);
+            if ( bit == null )
+            { 
+                mArtTask = new LoadAlbumArtTask().execute((Void) null);
+            }
             setPauseButtonImage();
         } catch (java.util.concurrent.RejectedExecutionException e) {
             e.printStackTrace();

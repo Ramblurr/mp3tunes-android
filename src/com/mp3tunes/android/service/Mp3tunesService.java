@@ -363,7 +363,6 @@ public class Mp3tunesService extends Service
                     playingNotify();
                     mServiceState = STATE.PLAYING;
                     mAutoSkipCount = 0;
-                    notifyChange( META_CHANGED );
                 }
                 else
                 {
