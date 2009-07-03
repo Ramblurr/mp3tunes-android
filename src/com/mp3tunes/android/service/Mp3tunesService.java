@@ -446,7 +446,7 @@ public class Mp3tunesService extends Service
             int type = cm.getActiveNetworkInfo().getType();
             if(type == ConnectivityManager.TYPE_WIFI)
             {
-                bitrate = vals[5]; // 5 = 192000 // TODO this shouldn't be harcoded
+                bitrate = vals[4]; // 5 = 128000
             } 
             else if(type == ConnectivityManager.TYPE_MOBILE) 
             {
@@ -456,11 +456,11 @@ public class Mp3tunesService extends Service
                 {
                     case TelephonyManager.NETWORK_TYPE_UNKNOWN:
                     case TelephonyManager.NETWORK_TYPE_GPRS:
-                        bitrate = vals[3];
+                        bitrate = vals[2]; // 2 = 56000
                         break;
                     case TelephonyManager.NETWORK_TYPE_EDGE:
                     case TelephonyManager.NETWORK_TYPE_UMTS:
-                        bitrate = vals[4];
+                        bitrate = vals[3]; // 3 = 96000
                         break;
                 } 
             }
@@ -691,9 +691,7 @@ public class Mp3tunesService extends Service
 
         public boolean isPlaying() throws RemoteException
         {
-            return mServiceState == STATE.PAUSED
-                || mServiceState == STATE.PLAYING
-                || mServiceState == STATE.SKIPPING;
+            return mServiceState != STATE.STOPPED;
         }
 
         public void next() throws RemoteException
